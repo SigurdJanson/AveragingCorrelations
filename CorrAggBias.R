@@ -7,10 +7,9 @@
 #' coefficients
 #' @param df degrees of freedom of the distribution of the 
 #' correlation coefficient
+#' @param n Sample size
 #' @value Hotelling z is NaN for df <= 1
 #' @author Jan Seifert
-#' @references Hotelling, H. (1953). New light on the correlation coefficient and
-#' its transformations. Journal of the Royal Statistical Society, 15, p. 193-225.
 FisherZ <- function( r ) {
   # PRECONDITIONS
   if(missing(r)) return(NA)
@@ -48,6 +47,8 @@ FisherZInv <- function( z ) {
 
 #' HotellingZ
 #' @describeIn FisherZ Improved fisher z transformation by Hotelling (1953)
+#' @references Hotelling, H. (1953). New light on the correlation coefficient and
+#' its transformations. Journal of the Royal Statistical Society, 15, p. 193-225.
 HotellingZ <- function( r, df ) {
   if(missing(df)) stop("Degrees of freedom 'df' are missing")
   if(any(df <= 1)) dfleq1 <- which(df <= 1)
@@ -70,12 +71,59 @@ HotellingZInv <- function( z, r, df ) {
 }
 
 
+#' MinVarZ
+#' @describeIn Correct sampple r with the equation by Olkin & Pratt (1958).
+MinVarZ <- function(r, n) {
+  if(any(n < 5)) stop("Sample size must be greater than 3")
+
+  df <- n-1 # if all µ and σ are unkonwn (if µ was know it'd be n)
+  #k <- (-7 + 9*sqrt(2))/2 # k = 2.87 hinted by Olkin & Pratt (1958)
+  k <- 3 # official approximation by Olkin & Pratt (1958), form. 2.7
+  G <- r * ( 1 + ((1-r^2) / (2 * (df - k))) ) # formula 2.7
+  return(G)
+}
+
+MinVarZ.hg <- function(r, n) {
+  fc2 <- function(t, r, df) {
+    t^(-0.5) * (1-t)^((df/2-1)-1) / (1 - t*(1-r^2))^0.5
+  }
+  Fc2 <- function(r, df) integrate(fc2, 0, 1, df = df, r = r)$value
+  
+  if(any(n < 5)) stop("Sample size must be greater than 3")
+  df <- n-1 # if all µ and σ are unkonwn (if µ was know it'd be n)
+  dfh <- df/2
+  
+  Component1 <- gamma(dfh-0.5) / gamma(0.5) / gamma(dfh-1)
+  Component2 <- mapply(Fc2, df = df, r = r)
+  G <- r * Component1 * Component2
+  
+  return(Re(G))
+}
+
+
+# This function throws a lot of warnings
+MinVarZ.hg.udf <- function(r, n) {
+  if(any(n < 5)) stop("Sample size must be greater than 3")
+  
+  G <- r * hypergeo(0.5, 0.5, (n-1)/2, 1-r^2)
+
+  return(Re(G))
+}
+
+
+
+
+
 #' MeanR
 #' @param R A vector of correlations
 #' @param N A vector of the sample sizes each correlation is based on
 #' @details The mean of correlations is weighted by the size of 
 #' the sample behind each correlation.
-MeanR <- function( R, N, Method = c("Default", "Fisher", "Hotelling", "MinVar"), ... ) {
+#' - Default uses no correction method
+#' - Fisher is the Fisher Z correction
+#' - Hotelling is Hotelling's correction methog
+#' - MinVar is the correction proposed by Olkin & Pratt (1958)
+MeanR <- function( R, N, Method = c("Default", "Fisher", "Hotelling", "MinVar", "Hypergeo"), ... ) {
   M <- match.arg(Method)
   Res <- switch(M,
            Default = MeanR_Default(R, N, ...),
@@ -86,6 +134,7 @@ MeanR <- function( R, N, Method = c("Default", "Fisher", "Hotelling", "MinVar"),
            )
   return(Res)
 }
+
 
 #' MeanR_Default
 #' @describeIn MeanR Average of correlations without correction
@@ -111,6 +160,8 @@ MeanR_Fisher <- function( R, N ) {
 
 #' MeanR_Fisher
 #' @describeIn MeanR 
+#' @references Hotelling H (1953) New light on the correlation 
+#' coefficient and its transforms. J R Stat Soc B 15:193–232.
 MeanR_Hotelling <- function( R, N ) {
   df <- N-2
   Z <- HotellingZ(R, df) # df missing
@@ -121,7 +172,16 @@ MeanR_Hotelling <- function( R, N ) {
 
 #' MeanR_MinVar
 #' @describeIn MeanR Minimum variance estimator by Olkin & Pratt (1958)
+#' @references TODO
 MeanR_MinVar <- function( R, N ) {
-  stop("Not implemented")
+  Mean <- MeanR_Default(MinVarZ(R, N), N)
+  return(Mean)
 }
 
+#' MeanR_MinVar
+#' @describeIn MeanR Minimum variance estimator by Olkin & Pratt (1958)
+#' @references TODO
+MeanR_MinVar <- function( R, N ) {
+  Mean <- MeanR_Default(MinVarZ.hg(R, N), N)
+  return(Mean)
+}
