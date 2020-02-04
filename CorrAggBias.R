@@ -10,7 +10,7 @@ library(hypergeo)
 #' correlation coefficient
 #' @param n Sample size
 #' @value Hotelling z is NaN for df <= 1
-#' @note MinVarZ.pr is defined for n < 340 (roughly).
+#' @note MinVarZ.pr is defined for n < 600 (roughly).
 #' @author Jan Seifert
 FisherZ <- function( r ) {
   # PRECONDITIONS
@@ -93,17 +93,16 @@ MinVarZ <- function(r, n, k = (-7 + 9*sqrt(2))/2) {
 MinVarZ.pr <- function(r, n) {
   fc2 <- function(t, r, df) {
     (1-t)^((df-4)/2)  / (1 - t + t*r^2)^0.5 / sqrt(t) #seems fastest
-    #t^(-0.5) * (1-t)^((df/2)-2) / (1 - t*(1-r^2))^0.5
-    #( t^(-0.5)*(1-t)^((n/2)-2) ) / (1 - t + t*r^2)^0.5
   }
   Fc2 <- function(r, df) integrate(fc2, 0, 1, r = r, df = df)$value
 
-  if(any(n < 5)) stop("Sample size must be greater than 3")
+  if(any(n < 5)) stop("Sample size must be greater than 4")
   df <- n-1 # if all µ and σ are unkonwn (if µ was know it'd be n)
   dfh <- df/2
   # Use value for gamma(0.5) to save computation time - https://oeis.org/A002161
-  GammaOfHalf <- 1.772453850905516027298167483341145182797549456122387128213807789852911284591032181374950656738544665
-  Component1 <- gamma(dfh-0.5) / GammaOfHalf / gamma(dfh-1)
+  GammaOfHalf <- log(1.772453850905516027298167483341145182797549456122387128213807789852911284591032181374950656738544665)
+  # use lgamma tp prevent overflow
+  Component1 <- exp(lgamma(dfh-0.5) - lgamma(dfh-1) - GammaOfHalf)
   Component2 <- mapply(Fc2, df = df, r = r)
   G <- r * Component1 * Component2
   
