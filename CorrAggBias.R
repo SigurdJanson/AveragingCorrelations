@@ -1,3 +1,4 @@
+library(hypergeo)
 
 #' FisherZ
 #' Fisher z transformation or it's inverse on a vector 
@@ -9,6 +10,7 @@
 #' correlation coefficient
 #' @param n Sample size
 #' @value Hotelling z is NaN for df <= 1
+#' @note MinVarZ.pr is defined for n < 340 (roughly).
 #' @author Jan Seifert
 FisherZ <- function( r ) {
   # PRECONDITIONS
@@ -72,32 +74,40 @@ HotellingZInv <- function( z, r, df ) {
 
 
 #' MinVarZ
-#' @describeIn Correct sampple r with the equation by Olkin & Pratt (1958).
-MinVarZ <- function(r, n) {
+#' @describeIn FisherZ Correct sampple r with the equation by Olkin & Pratt (1958).
+MinVarZ <- function(r, n, k = (-7 + 9*sqrt(2))/2) {
   if(any(n < 5)) stop("Sample size must be greater than 3")
+  if(!is.double(k)) stop("Need a real number for 'k'")
 
   df <- n-1 # if all µ and σ are unkonwn (if µ was know it'd be n)
   #k <- (-7 + 9*sqrt(2))/2 # k = 2.87 hinted by Olkin & Pratt (1958)
-  k <- 3 # official approximation by Olkin & Pratt (1958), form. 2.7
+  #k <- 3 # official approximation by Olkin & Pratt (1958), form. 2.7
   G <- r * ( 1 + ((1-r^2) / (2 * (df - k))) ) # formula 2.7
   return(G)
 }
 
-MinVarZ.hg <- function(r, n) {
+
+#' MinVarZ.pr
+#' @describeIn FisherZ Correct sample r with the equation by Olkin & Pratt (1958).
+#' @details 
+MinVarZ.pr <- function(r, n) {
   fc2 <- function(t, r, df) {
-    t^(-0.5) * (1-t)^((df/2-1)-1) / (1 - t*(1-r^2))^0.5
+    (1-t)^((df-4)/2)  / (1 - t + t*r^2)^0.5 / sqrt(t) #seems fastest
+    #t^(-0.5) * (1-t)^((df/2)-2) / (1 - t*(1-r^2))^0.5
+    #( t^(-0.5)*(1-t)^((n/2)-2) ) / (1 - t + t*r^2)^0.5
   }
-  Fc2 <- function(r, df) integrate(fc2, 0, 1, df = df, r = r)$value
-  
+  Fc2 <- function(r, df) integrate(fc2, 0, 1, r = r, df = df)$value
+
   if(any(n < 5)) stop("Sample size must be greater than 3")
   df <- n-1 # if all µ and σ are unkonwn (if µ was know it'd be n)
   dfh <- df/2
-  
-  Component1 <- gamma(dfh-0.5) / gamma(0.5) / gamma(dfh-1)
+  # Use value for gamma(0.5) to save computation time - https://oeis.org/A002161
+  GammaOfHalf <- 1.772453850905516027298167483341145182797549456122387128213807789852911284591032181374950656738544665
+  Component1 <- gamma(dfh-0.5) / GammaOfHalf / gamma(dfh-1)
   Component2 <- mapply(Fc2, df = df, r = r)
   G <- r * Component1 * Component2
   
-  return(Re(G))
+  return(G)
 }
 
 
@@ -106,7 +116,6 @@ MinVarZ.hg.udf <- function(r, n) {
   if(any(n < 5)) stop("Sample size must be greater than 3")
   
   G <- r * hypergeo(0.5, 0.5, (n-1)/2, 1-r^2)
-
   return(Re(G))
 }
 
@@ -123,14 +132,18 @@ MinVarZ.hg.udf <- function(r, n) {
 #' - Fisher is the Fisher Z correction
 #' - Hotelling is Hotelling's correction methog
 #' - MinVar is the correction proposed by Olkin & Pratt (1958)
-MeanR <- function( R, N, Method = c("Default", "Fisher", "Hotelling", "MinVar", "Hypergeo"), ... ) {
+#' - Precise is a correction proposed by Olkin & Pratt (1958)
+MeanR <- function( R, N, Method = c("None", "Fisher", "Hotelling", 
+                                    "MinVar", "TrueK", "Precise"), ... ) {
   M <- match.arg(Method)
   Res <- switch(M,
-           Default = MeanR_Default(R, N, ...),
+           None = MeanR_None(R, N, ...),
            Fisher = MeanR_Fisher(R, N, ...),
            Hotelling = MeanR_Hotelling(R, N, ...),
-           MinVar = MeanR_MinVar(R, N, ...),
-           MeanR_Default(R, N, ...)
+           MinVar = MeanR_MinVar(R, N, k = 3, ...),
+           TrueK = MeanR_MinVar(R, N, ...),
+           Precise = MeanR_Precise(R, N, ...),
+           MeanR_None(R, N, ...)
            )
   return(Res)
 }
@@ -138,7 +151,7 @@ MeanR <- function( R, N, Method = c("Default", "Fisher", "Hotelling", "MinVar", 
 
 #' MeanR_Default
 #' @describeIn MeanR Average of correlations without correction
-MeanR_Default <- function( R, N, na.rm = FALSE ) {
+MeanR_None <- function( R, N, na.rm = FALSE ) {
   if(any(N <= 1)) stop("Sample size 'N' must be larger than 1")
   NaCount <- ifelse(na.rm == TRUE, sum(is.na(R)), 0)
   if(length(N) < length(R)) N <- rep(N, length.out = length(R))
@@ -153,7 +166,7 @@ MeanR_Default <- function( R, N, na.rm = FALSE ) {
 #' @describeIn MeanR 
 MeanR_Fisher <- function( R, N ) {
   R_ <- FisherZ(R)
-  Mean <- MeanR_Default(R_, N)
+  Mean <- MeanR_None(R_, N)
   return(FisherZInv(Mean))
 }
 
@@ -165,7 +178,7 @@ MeanR_Fisher <- function( R, N ) {
 MeanR_Hotelling <- function( R, N ) {
   df <- N-2
   Z <- HotellingZ(R, df) # df missing
-  Mean <- MeanR_Default(Z, N)
+  Mean <- MeanR_None(Z, N)
   return(HotellingZInv(Mean, R, df))
 }
 
@@ -174,14 +187,14 @@ MeanR_Hotelling <- function( R, N ) {
 #' @describeIn MeanR Minimum variance estimator by Olkin & Pratt (1958)
 #' @references TODO
 MeanR_MinVar <- function( R, N ) {
-  Mean <- MeanR_Default(MinVarZ(R, N), N)
+  Mean <- MeanR_None(MinVarZ(R, N), N)
   return(Mean)
 }
 
 #' MeanR_MinVar
 #' @describeIn MeanR Minimum variance estimator by Olkin & Pratt (1958)
 #' @references TODO
-MeanR_MinVar <- function( R, N ) {
-  Mean <- MeanR_Default(MinVarZ.hg(R, N), N)
+MeanR_Precise <- function( R, N ) {
+  Mean <- MeanR_None(MinVarZ.pr(R, N), N)
   return(Mean)
 }
