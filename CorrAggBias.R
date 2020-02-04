@@ -9,6 +9,9 @@ library(hypergeo)
 #' @param df degrees of freedom of the distribution of the 
 #' correlation coefficient
 #' @param n Sample size
+#' @description 
+#' Olkin & Pratts (1958) formula is always quoted with k=3 when in fact they
+#' proposed a more precise value that is the default in 'MinVarZ'.
 #' @value Hotelling z is NaN for df <= 1
 #' @note MinVarZ.pr is defined for n < 600 (roughly).
 #' @author Jan Seifert
@@ -185,8 +188,8 @@ MeanR_Hotelling <- function( R, N ) {
 #' MeanR_MinVar
 #' @describeIn MeanR Minimum variance estimator by Olkin & Pratt (1958)
 #' @references TODO
-MeanR_MinVar <- function( R, N ) {
-  Mean <- MeanR_None(MinVarZ(R, N), N)
+MeanR_MinVar <- function( R, N, k = (9*sqrt(2)-7)/2 ) {
+  Mean <- MeanR_None(MinVarZ(R, N, k), N)
   return(Mean)
 }
 
