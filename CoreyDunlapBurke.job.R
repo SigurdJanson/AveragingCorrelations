@@ -21,7 +21,8 @@ source("./CorrAggBias.R")
 N <- seq(10, 50, 10)   # sample size
 R <- seq(0, 0.9, 0.1)  # Rho
 D <- 3:10              # Data sets to correlate
-M <- c("Default", "Fisher", "MinVar", "Hypergeo") # Correction method
+#M <- c("None", "Fisher", "Hotelling", "MinVar", "TrueK", "Precise")
+M <- c("MinVar") # Correction method
 NConditions <- length(D) * length(N) * length(R) * length(M)
 NIterations <- 10000
 
@@ -81,20 +82,6 @@ RandomSample_Matrix <- function(Iteration, SampleSize, Rho) {
       Result$RDelta[Index]  <<- Rho - RObs
       Index <<- Index +1
     }
-
-    # Result$Rho[Index]        <<- Rho #
-    # Result$SampleSize[Index] <<- SampleSize #
-    # Result$Samples[Index]    <<- Samples  #
-    # Result$Iteration[Index]  <<- Iteration #
-    # 
-    # RObs <- MeanR(Correls, SampleSize, Method = "Fisher")
-    # Result$Method[Index]  <<- "Fisher"
-    # Result$RObs[Index]    <<- RObs
-    # Result$RDelta[Index]  <<- Rho - RObs
-    # Index <<- Index +1
-
-    #RObs <- MeanR( CorMat, n, Method = "Hotelling")
-    #...
   }#for
 }
 
@@ -132,8 +119,8 @@ RandomSample_Indie <- function(Iteration, SampleSize, Rho) {
     Result$Samples[Index]    <<- Samples  #
     Result$Iteration[Index]  <<- Iteration #
     
-    RObs <- MeanR(Correls, SampleSize, Method = "Default")
-    Result$Method[Index]  <<- "Default"
+    RObs <- MeanR(Correls, SampleSize, Method = "None")
+    Result$Method[Index]  <<- "None"
     Result$RObs[Index]    <<- RObs
     Result$RDelta[Index]  <<- Rho - RObs
     Index <<- Index +1
@@ -178,4 +165,4 @@ rm(Names, Index, n, r)
 
 
 # STORAGE ----
-save(Result, file="./data/CoreyDunlapBurke.Raw.Rda")
+save(Result, file=paste("./data/CoreyDunlapBurke", M, "Raw.Rda", sep = "_"))
