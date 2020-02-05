@@ -100,7 +100,6 @@ test_that("Hotelling Z Inverse", {
 })
 
 
-
 test_that("Hotelling Z: Reversion Test", {
   # Use of an alternative algorithm
   inp <- seq(-0.99, 0.99, 0.01)
@@ -111,29 +110,27 @@ test_that("Hotelling Z: Reversion Test", {
 
 
 
+# MinVar (approx. G by Olkin & Pratt, 1958)  ----
 
-
-# MinVar G by Olkin & Pratt G ----
-
-test_that("MinVar G", {
+test_that("MinVar", {
   # Olin & Pratt (1958) - 
   # tolerance had to be lowered because the paper only gives 3 digits
   # Small sample sizes do not work because they do not report values computed
   # by the approximation but by recursive iteration.
   inp.r <- rep(0.5, 3)
-  n <- c(11, 21, 31)          # c(5, 11, 21, 31)
-  e <- c(0.525, 0.511, 0.507) # c(0.605, 0.525, 0.511, 0.507)
-  expect_equal(MinVarZ.hg(inp.r, n), e, tolerance = 1e-4)
+  n <- c(11, 21, 31)
+  e <- c(0.525, 0.511, 0.507)
+  expect_equal(MinVarZ(inp.r, n), e, tolerance = 1e-3)
   
-  inp.r <- rep(0.5, 4)
-  n <- c(5, 11, 21, 31)
-  e <- c(0.605, 0.525, 0.511, 0.507) 
-  expect_equal(MinVarZ.hg(inp.r, n), e, tolerance = 1e-4)
+  inp.r <- rep(0.5, 3)
+  n <- c(13, 21, 31)
+  e <- c(0.520, 0.511, 0.507)
+  expect_equal(MinVarZ(inp.r, n), e, tolerance = 1e-3)
   
 
   inp.r <- rep(0.1, 3)
-  n <- c(11, 21, 31) # c(5, 7, 11, 21, 31)
-  e <- c(0.107, 0.103, 0.102) # c(0.148, 0.117, 0.107, 0.103, 0.102)
+  n <- c(11, 21, 31)
+  e <- c(0.107, 0.103, 0.102) 
   expect_equal(MinVarZ(inp.r, n), e, tolerance = 1e-3)
   
   # Taken from https://www.psychometrica.de/correlation.html#fisher
@@ -144,15 +141,92 @@ test_that("MinVar G", {
 
 })
 
-# CorrAggBias.test.R:124: failure: MinVar G
-# MinVarZ(inp.r, n) not equal to `e`.
-# 1/3 mismatches
-# [1] 0.688 - 0.605 == 0.0825
-# 
-# CorrAggBias.test.R:129: failure: MinVar G
-# MinVarZ(inp.r, n) not equal to `e`.
-# 1/5 mismatches
-# [1] 0.15 - 0.148 == 0.0015
+
+
+# MinVar (approx. G by Olkin & Pratt, 1958) ----
+
+test_that("MinVar TrueK", {
+  # No data available to 
+})
+
+
+
+
+# Precise MinVar G by Olkin & Pratt G ----
+
+test_that("MinVar G Precise", {
+  MinVarZ.pr.alt <- function(r, n) {
+    fc2 <- function(t, r, df) {
+      ( t^(-0.5) * (1+t)^(1-0.5*df) ) / (1+t*r^2)^0.5 
+    }
+    Fc2 <- function(r, df) integrate(fc2, 0, Inf, df = df, r = r)$value
+    
+    if(any(n < 5)) stop("Sample size must be greater than 3")
+    df <- n-1 # if all µ and σ are unkonwn (if µ was know it'd be n)
+    dfh <- df/2
+    # Use value for gamma(0.5) to save computation time - https://oeis.org/A002161
+    GammaOfHalf <- 1.772453850905516027298167483341145182797549456122387128213807789852911284591032181374950656738544665
+    Component1 <- gamma(dfh-0.5) / GammaOfHalf / gamma(dfh-1)
+    Component2 <- mapply(Fc2, df = df, r = r)
+    G <- r * Component1 * Component2
+    
+    return(G)
+  }
+  
+  # This function throws a lot of warnings
+  library(hypergeo)
+  MinVarZ.hg.udf <- function(r, n) {
+    if(any(n < 5)) stop("Sample size must be greater than 3")
+    df <- n-1
+    G <- r * hypergeo(0.5, 0.5, (df-1)/2, 1-r^2)
+    return(Re(G))
+  }
+  
+  # Compare function to alternative form provided by Olkin & Pratt, 1958
+  for(r in c(0.01, 0.1, 0.3, 0.5, 0.75, 0.9, 0.99))
+    for(n in c(5, 10, 25, 50, 100))
+      expect_equal(MinVarZ.pr(r, n), MinVarZ.pr.alt(r, n))    
+  for(r in c(0.01, 0.1, 0.3, 0.5, 0.75, 0.9, 0.99) * -1)
+    for(n in c(5, 10, 25, 50, 100))
+      expect_equal(MinVarZ.pr(r, n), MinVarZ.pr.alt(r, n))    
+  
+  # Compare function to alternative form provided by Olkin & Pratt, 1958
+  # using hypergeometric function
+  # r below 0.11 will not converge and throw an error
+  for(r in c(0.11, 0.3, 0.5, 0.75, 0.9, 0.99))
+    for(n in c(5, 10, 25, 50, 100))
+      expect_equal(MinVarZ.pr(r, n), MinVarZ.hg.udf(r, n), tolerance=1e-7)#,
+  for(r in c(0.11, 0.3, 0.5, 0.75, 0.9, 0.99) * -1)
+    for(n in c(5, 10, 25, 50, 100))
+      expect_equal(MinVarZ.pr(r, n), MinVarZ.hg.udf(r, n), tolerance=1e-7)#,
+  
+  # Test vectorized function call
+  r <- seq(0.01, 0.99, 0.01)
+  n <- rep(seq(5, 50, 5), length.out = length(r))
+  expect_equal(MinVarZ.pr(r, n), MinVarZ.pr.alt(r, n))
+
+  # Test vectorized function call
+  r <- seq(0.11, 0.99, 0.01)
+  n <- rep(seq(5, 50, 5), length.out = length(r))
+  expect_equal(MinVarZ.pr(r, n), MinVarZ.hg.udf(r, n))
+  
+  # Use particular values from Olkin & Pratt (1958)
+  # Tolerance is reduced because the paper provides only 3 digits
+  r <- seq(0.1, 0.9, 0.1)
+  n <- rep(5, length.out = length(r))
+  e <- c(.148, .280, .398, .506, .605, .695, .780, .858, .931)
+  expect_equal(MinVarZ.pr(r, n), e, tolerance=5e-4)
+  r <- seq(0.1, 0.9, 0.1)
+  n <- rep(15, length.out = length(r))
+  e <- c(.105, .209, .312, .415, .516, .616, .715, .812, .907)
+    expect_equal(MinVarZ.pr(r, n), e, tolerance=5e-4)
+  r <- seq(0.1, 0.9, 0.1)
+  n <- rep(31, length.out = length(r))
+  e <- c(.102, .204, .305, .406, .507, .607, .706, .805, .903)
+    expect_equal(MinVarZ.pr(r, n), e, tolerance=5e-4)
+})
+  
+
 
 
 
@@ -161,9 +235,9 @@ test_that("MinVar G", {
 test_that("MeanR", {
   # Default averaging
   inp <- seq(-0.5, 0.5, 0.5)
-  expect_equal(0, MeanR(inp, 2, "Default"))
-  expect_equal(0, MeanR(inp, 10, "Default"))
-  expect_equal(0, MeanR(inp, c(2, 5, 2), "Default"))
+  expect_equal(0, MeanR(inp, 2, "None"))
+  expect_equal(0, MeanR(inp, 10, "None"))
+  expect_equal(0, MeanR(inp, c(2, 5, 2), "None"))
   
   # Fisher averaging
   inp <- seq(-0.5, 0.5, 0.5)
@@ -188,12 +262,15 @@ test_that("MeanR", {
   
   # Check errors
   inp <- seq(-0.5, 0.5, 0.5)
-  expect_error(MeanR(inp, 1, "Default"),
+  expect_error(MeanR(inp, 1, "None"),
                "Sample size 'N' must be larger than 1")
   expect_error(MeanR(inp, 1, "Fisher"),
                "Sample size 'N' must be larger than 1")
   expect_error(MeanR(inp, 1, "Hotelling"),
                "Sample size 'N' must be larger than 1")
+  expect_error(MeanR(inp, 1, "TotalerQuatsch"),
+               "'arg' should be one of")
+  
 })
 
 
