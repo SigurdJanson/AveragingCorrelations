@@ -1,5 +1,3 @@
-library(hypergeo)
-
 #' FisherZ
 #' Fisher z transformation or it's inverse on a vector 
 #' of correlation coefficients.
@@ -111,16 +109,6 @@ MinVarZ.pr <- function(r, n) {
   
   return(G)
 }
-
-
-# This function throws a lot of warnings
-MinVarZ.hg.udf <- function(r, n) {
-  if(any(n < 5)) stop("Sample size must be greater than 3")
-  
-  G <- r * hypergeo(0.5, 0.5, (n-1)/2, 1-r^2)
-  return(Re(G))
-}
-
 
 
 
