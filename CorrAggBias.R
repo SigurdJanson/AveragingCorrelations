@@ -81,8 +81,6 @@ MinVarZ <- function(r, n, k = (-7 + 9*sqrt(2))/2) {
   if(!is.double(k)) stop("Need a real number for 'k'")
 
   df <- n-1 # if all µ and σ are unkonwn (if µ was know it'd be n)
-  #k <- (-7 + 9*sqrt(2))/2 # k = 2.87 hinted by Olkin & Pratt (1958)
-  #k <- 3 # official approximation by Olkin & Pratt (1958), form. 2.7
   G <- r * ( 1 + ((1-r^2) / (2 * (df - k))) ) # formula 2.7
   return(G)
 }
