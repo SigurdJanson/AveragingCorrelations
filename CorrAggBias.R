@@ -76,6 +76,9 @@ HotellingZInv <- function( z, r, df ) {
 
 #' MinVarZ
 #' @describeIn FisherZ Correct sampple r with the equation by Olkin & Pratt (1958).
+#' @references Olkin, I. & Pratt, J.W. (1958). Unbiased Estimation of Certain 
+#' Correlation Coefficients. The Annals of Mathematical Statistics,  29 (1), 
+#' p. 201-211
 MinVarZ <- function(r, n, k = (-7 + 9*sqrt(2))/2) {
   if(any(n < 5)) stop("Sample size must be greater than 3")
   if(!is.double(k)) stop("Need a real number for 'k'")

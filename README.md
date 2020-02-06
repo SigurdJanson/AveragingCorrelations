@@ -17,7 +17,7 @@ Here are a few basic insights concerning the issue.
 
 1. Basically, you can average correlations. Of course, it only makes sense when they come from the same population. Otherwise, you'd be averaging apples with oranges. Of course, it would be preferable to get a single estimate of r from one large sample, but sometimes that is not possible and you have to obtain correlation estimates from several samples or from repeated measurement on the same sample.
 2. A correlation coefficient is not unbiased. That means, when you average several correlations it will not converge to the true correlation. It will underestimate the true correlation. This effect is greatest for mid-range correlations around .05.
-3. There are several way to correct for that. See [Alexander (1990)](https://link.springer.com/content/pdf/10.3758/BF03334037.pdf) for a brief overview .
+3. There are several way to correct for that. See [Alexander (1990)](https://link.springer.com/content/pdf/10.3758/BF03334037.pdf) for a brief overview.
 4. The Fisher z is the most well known correction. There are lots of others. Some of them are more precise than Fisher z. If you're new to this, Fisher z is still a good start.
 5. In any way, you should not simply average the correlations but weight them using the sample size of each correlation.
 6. Sample size is also important given the fact that the bias of the correlation coefficient highly depends on the underlying sample sizes (Corey, Dunlap & Burke, 1998).

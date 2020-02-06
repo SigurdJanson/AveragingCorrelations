@@ -19,12 +19,12 @@ source("./CorrAggBias.R")
 
 # Variables ----
 N <- seq(10, 50, 10)   # sample size
-R <- seq(0, 0.9, 0.1)  # Rho
+R <- seq(0.00, 0.95, 0.05)  # Rho
 D <- 3:10              # Data sets to correlate
 #M <- c("None", "Fisher", "Hotelling", "MinVar", "TrueK", "Precise")
-M <- c("MinVar") # Correction method
+M <- c("TrueK") # Correction method
 NConditions <- length(D) * length(N) * length(R) * length(M)
-NIterations <- 10000
+NIterations <- 50000
 
 # Create an empty data frame to allocate the memory (saves time (a lot))
 Names <- c("Rho", "SampleSize", "Samples", "Method", "Iteration",
@@ -144,8 +144,9 @@ RandomSample_Indie <- function(Iteration, SampleSize, Rho) {
 
 
 # Computations ----
-Index <- 1 # Index to iterate through data
 
+Index <- 1 # Index to iterate through data
+cat(M, "\n")
 for(n in N) {
   cat(n, "\n")
   for(r in R) {
