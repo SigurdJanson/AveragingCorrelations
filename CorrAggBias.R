@@ -8,10 +8,12 @@
 #' correlation coefficient
 #' @param n Sample size
 #' @description 
+#' Hotelling (1953) described two formulas to correct Fisher z.
 #' Olkin & Pratts (1958) formula is always quoted with k=3 when in fact they
 #' proposed a more precise value that is the default in 'MinVarZ'.
 #' @value Hotelling z is NaN for df <= 1
 #' @note MinVarZ.pr is defined for n < 600 (roughly).
+#' The functions HotellingZ [...] are only defined for df > 3.
 #' @author Jan Seifert
 FisherZ <- function( r ) {
   # PRECONDITIONS
@@ -48,6 +50,7 @@ FisherZInv <- function( z ) {
   return(r)
 }
 
+
 #' HotellingZ
 #' @describeIn FisherZ Improved fisher z transformation by Hotelling (1953)
 #' @references Hotelling, H. (1953). New light on the correlation coefficient and
@@ -72,6 +75,32 @@ HotellingZInv <- function( z, r, df ) {
   if(any(df <= 1)) Fisher[dfleq1] <- NaN
   return(FisherZInv(Fisher))
 }
+
+#' HotellingZ2
+#' @describeIn FisherZ
+HotellingZ2 <- function( r, df ) {
+  if(missing(df)) stop("Degrees of freedom 'df' are missing")
+  if(any(df <= 1)) dfleq1 <- which(df <= 1)
+  
+  z = FisherZ( r )
+  if(any(df <= 1)) z[dfleq1] <- NaN
+  zh <- z - (3*z+r)/(4*df)
+  zh <- zh - ((23*z + 33*r - 5*r^3) / 96 / df^2)
+  return( zh )
+}
+
+#' HotellingZ2Inv
+#' @describeIn FisherZ Inverse for \code{HotellingZ}
+HotellingZ2Inv <- function( z, r, df ) {
+  if(missing(r)) stop("Untransformed correlations 'r' are missing")
+  if(missing(df)) stop("Degrees of freedom 'df' are missing")
+  if(any(df <= 1)) dfleq1 <- which(df <= 1)
+  
+  Fisher <- (4*df * z + r) / (4*df - 3)
+  if(any(df <= 1)) Fisher[dfleq1] <- NaN
+  return(FisherZInv(Fisher))
+}
+
 
 
 #' MinVarZ
@@ -124,16 +153,24 @@ MinVarZ.pr <- function(r, n) {
 #' - Hotelling is Hotelling's correction methog
 #' - MinVar is the correction proposed by Olkin & Pratt (1958)
 #' - Precise is a correction proposed by Olkin & Pratt (1958)
-MeanR <- function( R, N, Method = c("None", "Fisher", "Hotelling", 
-                                    "MinVar", "TrueK", "Precise"), ... ) {
+#' - Squared method averages \eqn{r^2} and returns the square root 
+#' of the sum (as suggested by Statsoft (2011)).
+#' @references Statsoft Textbook. (2011). Basic Statistics. 
+#' Retrieved from http://www.statsoft.com/Textbook/Basic-Statistics#Correlationso
+#' at 2020-02-09
+MeanR <- function( R, N, Method = c("None", "Fisher", "Hotelling", "Hotelling2",
+                                    "MinVar", "TrueK", "Precise",
+                                    "Squared"), ... ) {
   M <- match.arg(Method)
   Res <- switch(M,
            None = MeanR_None(R, N, ...),
            Fisher = MeanR_Fisher(R, N, ...),
            Hotelling = MeanR_Hotelling(R, N, ...),
+           Hotelling2 = MeanR_Hotelling2(R, N, ...),
            MinVar = MeanR_MinVar(R, N, k = 3, ...),
            TrueK = MeanR_MinVar(R, N, ...),
            Precise = MeanR_Precise(R, N, ...),
+           Squared = sqrt(mean(R^2)),
            MeanR_None(R, N, ...)
            )
   return(Res)
@@ -156,13 +193,13 @@ MeanR_None <- function( R, N, na.rm = FALSE ) {
 #' MeanR_Fisher
 #' @describeIn MeanR 
 MeanR_Fisher <- function( R, N ) {
-  R_ <- FisherZ(R)
-  Mean <- MeanR_None(R_, N)
+  Z <- FisherZ(R)
+  Mean <- MeanR_None(Z, N)
   return(FisherZInv(Mean))
 }
 
 
-#' MeanR_Fisher
+#' MeanR_Hotelling
 #' @describeIn MeanR 
 #' @references Hotelling H (1953) New light on the correlation 
 #' coefficient and its transforms. J R Stat Soc B 15:193–232.
@@ -170,7 +207,20 @@ MeanR_Hotelling <- function( R, N ) {
   df <- N-2
   Z <- HotellingZ(R, df) # df missing
   Mean <- MeanR_None(Z, N)
-  return(HotellingZInv(Mean, R, df))
+  #return(HotellingZInv(Mean, R, df)) #causes trouble by going back to a vector!
+  return(Mean)
+}
+
+#' MeanR_Hotelling2
+#' @describeIn MeanR 
+#' @references Hotelling H (1953) New light on the correlation 
+#' coefficient and its transforms. J R Stat Soc B 15:193–232.
+MeanR_Hotelling2 <- function( R, N ) {
+  df <- N-2
+  Z <- HotellingZ2(R, df) # df missing
+  Mean <- MeanR_None(Z, N)
+  #return(HotellingZInv(Mean, R, df)) #causes trouble by going back to a vector!
+  return(Mean)
 }
 
 
