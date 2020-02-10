@@ -64,9 +64,6 @@ test_that("Fisher Z: Reversion Tests", {
 # Hotelling Z ----
 
 test_that("Hotelling Z", {
-  # Use of an alternative algorithm
-  inp <- seq(-1, 1, 0.01)
-  
   # Taken from https://rdrr.io/cran/GeneNet/man/z.transform.html
   inp <- c(-0.26074194, 0.47251437, 0.23957283,-0.02187209,-0.07699437,
          -0.03809433,-0.06010493, 0.01334491,-0.42383367,-0.25513041)
@@ -83,8 +80,7 @@ test_that("Hotelling Z", {
 test_that("Hotelling Z Inverse", {
   # Use of an alternative algorithm
   inp <- seq(-1, 1, 0.01)
-  #expect_equal(tanh(inp), FisherZInv(inp))
-  
+
   # Taken from https://rdrr.io/cran/GeneNet/man/z.transform.html
   e <- c(-0.26074194, 0.47251437, 0.23957283,-0.02187209,-0.07699437,
            -0.03809433,-0.06010493, 0.01334491,-0.42383367,-0.25513041)
@@ -108,6 +104,40 @@ test_that("Hotelling Z: Reversion Test", {
   # 
 })
 
+
+# Hotellings 2. Equation ----
+test_that("Hotelling2", {
+  r <- seq(-0.9, 0.9, 0.1)
+  z.ori <- seq(-0.9, 0.9, 0.1)
+  z <- z.ori
+  df <- 5
+  zh <- z - (3*z+r)/(4*df) - ((23*z + 33*r - 5*r^3) / (96 * df^2))
+  
+  #z <- ( 5*df^2*r^3 - 33*df^2*r - 24*df*r ) / ( 23*df^2 + 72*df - 96 )
+  #z = (df*r* (df*(5*r^2 - 33) - 24) - 96*zh) / (23*df^2 + 72*df - 96) #and n*(23*n + 72)!=96
+  #z <- (96*zh + 24*r*df - 33*r + 5*r^3) / (24*df * (4*df-3) - 23)
+  
+  # solve o = z - (3*z+r)/(4*n) - (23*z + 33*r - 5*r^3) / (96 * n^2)  for z
+  #z <- (24*df*r + 96*df^2*zh - 5*r^3 + 33*r) / ( - 72*df^3 + 96*df^2 - 23 )
+  
+  # Manuell
+  z <- zh*96*df^2 - 5*r^3 - 33*r - 24*df*r
+  z <- z / (96*df^2 + 72*df - 23)
+  
+  expect_equal( z, z.ori )
+  
+  
+  
+  # Taken from https://rdrr.io/cran/GeneNet/man/z.transform.html
+  # These values work for Hotelling - for Hotelling2 they will be imprecise
+  inp <- c(-0.26074194, 0.47251437, 0.23957283,-0.02187209,-0.07699437,
+           -0.03809433,-0.06010493, 0.01334491,-0.42383367,-0.25513041)
+  df <- 7
+  e <- c(-0.22899520, 0.44143031, 0.20958747, -0.01875062, -0.06613150, 
+         -0.03266875, -0.05158328, 0.01143920, -0.38875232, -0.22382820)
+  expect_equal(e, HotellingZ2(inp, df), tolerance = .006)
+  
+})
 
 
 # MinVar (approx. G by Olkin & Pratt, 1958)  ----
@@ -143,11 +173,13 @@ test_that("MinVar", {
 
 
 
-# MinVar (approx. G by Olkin & Pratt, 1958) ----
+# MinVar true k (approx. G by Olkin & Pratt, 1958) ----
 
 test_that("MinVar TrueK", {
-  # No data available to 
+  # No data available to test anything
+  expect_equal(0, 0)
 })
+
 
 
 
@@ -238,10 +270,12 @@ test_that("MeanR", {
   expect_equal(0, MeanR(inp, 2, "None"))
   expect_equal(0, MeanR(inp, 10, "None"))
   expect_equal(0, MeanR(inp, c(2, 5, 2), "None"))
+  #TODO: MORE TESTS NEEDED FOR 'NONE'
+  
   
   # Fisher averaging
   inp <- seq(-0.5, 0.5, 0.5)
-  expect_equal(0, MeanR(inp, 2, "Fisher"))
+  expect_equal(0, MeanR(inp, 2, "Fish"))
   expect_equal(0, MeanR(inp, 10, "Fisher"))
   expect_equal(0, MeanR(inp, c(2, 5, 2), "Fisher"))
   
@@ -256,9 +290,19 @@ test_that("MeanR", {
 
   # Hotelling averaging
   inp <- seq(-0.5, 0.5, 0.5)
-  # expect_equal(0, MeanR(inp, 2, "H"))
-  # expect_equal(0, MeanR(inp, 10, "Hotelling"))
-  # expect_equal(0, MeanR(inp, c(2, 5, 2), "Hotelling"))
+  expect_equal(MeanR(inp, 4, "Hotelling"), 0)
+  expect_equal(MeanR(inp, 10, "Hotelling"), 0)
+  expect_equal(MeanR(inp, c(4, 10, 4), "Hotelling"), 0)
+  
+  
+  # r²
+  inp <- seq(-0.5, 0.5, 0.1)
+  expect_equal(MeanR(inp, 2, "Squared"), 0.31622776601683794)
+  
+  inp <- seq(0.0, 1, 0.1)
+  expect_equal(MeanR(inp, 2, "Squared"), sqrt(0.35))
+  
+  
   
   # Check errors
   inp <- seq(-0.5, 0.5, 0.5)
@@ -268,6 +312,8 @@ test_that("MeanR", {
                "Sample size 'N' must be larger than 1")
   expect_error(MeanR(inp, 1, "Hotelling"),
                "Sample size 'N' must be larger than 1")
+  expect_error(MeanR(inp, 1, "Hotel"),
+               "'arg' should be one of")
   expect_error(MeanR(inp, 1, "TotalerQuatsch"),
                "'arg' should be one of")
   
