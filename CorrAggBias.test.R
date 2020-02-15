@@ -120,13 +120,7 @@ test_that("Hotelling2", {
   # solve o = z - (3*z+r)/(4*n) - (23*z + 33*r - 5*r^3) / (96 * n^2)  for z
   #z <- (24*df*r + 96*df^2*zh - 5*r^3 + 33*r) / ( - 72*df^3 + 96*df^2 - 23 )
   
-  # Manuell
-  z <- zh*96*df^2 - 5*r^3 - 33*r - 24*df*r
-  z <- z / (96*df^2 + 72*df - 23)
-  
-  expect_equal( z, z.ori )
-  
-  
+
   
   # Taken from https://rdrr.io/cran/GeneNet/man/z.transform.html
   # These values work for Hotelling - for Hotelling2 they will be imprecise
@@ -136,6 +130,19 @@ test_that("Hotelling2", {
   e <- c(-0.22899520, 0.44143031, 0.20958747, -0.01875062, -0.06613150, 
          -0.03266875, -0.05158328, 0.01143920, -0.38875232, -0.22382820)
   expect_equal(e, HotellingZ2(inp, df), tolerance = .006)
+
+  
+  inp <- seq(-0.99, 0.99, 0.01)
+  df <- 2
+  expect_equal(inp, HotellingZ2Inv(HotellingZ2(inp, df), inp, df))
+
+  inp <- seq(-0.99, 0.99, 0.01)
+  df <- 10
+  expect_equal(inp, HotellingZ2Inv(HotellingZ2(inp, df), inp, df))
+
+  inp <- seq(-0.99, 0.99, 0.01)
+  df <- 20
+  expect_equal(inp, HotellingZ2Inv(HotellingZ2(inp, df), inp, df))
   
 })
 
