@@ -96,7 +96,11 @@ HotellingZ2Inv <- function( z, r, df ) {
   if(missing(df)) stop("Degrees of freedom 'df' are missing")
   if(any(df <= 1)) dfleq1 <- which(df <= 1)
   
-  Fisher <- (4*df * z + r) / (4*df - 3)
+  Fisher <- z*96*df^2 - 5*r^3 - 33*r - 24*df*r
+  Fisher <- Fisher / (96*df^2 + 72*df - 23)
+  #Fisher <- -(24*df*r + 96*df^2*z - 5*r^3 + 33*r)
+  #Fisher <- Fisher / ( - 72*df^3 + 96*df^2 - 23 )
+  
   if(any(df <= 1)) Fisher[dfleq1] <- NaN
   return(FisherZInv(Fisher))
 }
