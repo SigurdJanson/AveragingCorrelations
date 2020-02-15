@@ -1,0 +1,347 @@
+---
+title: "Replication & Extension of Corey & Burkey"
+author: "Jan Seifert"
+date: "06 02 2020"
+bibliography: ./pub/AveragingCorrelations.bib
+csl: ./pub/apa-6th-edition.csl
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+__It is not possible to average correlation coefficients__. In my studies in the social sciences I found that in every textbook. Do not average correlation coefficients! I needed that for a project and I remembered the Fisher Z transformation [@Fisher1921] that is supposed to alleviate the bias.
+
+First of all, mathematically it is true: the mere average of several correlation coefficients makes no sense. Correlations are not additive is the "simple" way to say it. That means something like this.
+
+$$ {1 \over n} \cdot (r_{x_1, y_1} + r_{x_2, y_2} + ... + r_{x_n, y_n})   \ne  Correlation(x_1 ... x_n, y_1 ... y_n) $$
+
+
+After some digging I found that the problem is negligible in many cases. If the sample sizes N are large enough then the bias shows only on the third digit. Even without Fisher Z "the absolute bias becomes negligible (less than .01) for a sample size greater than 20" [@Bishara2015].
+
+Digging a little deeper I found that you can sure get a decent estimate of the mean. However, the standard deviations and, thus, the standard error may still suffer. **All kinds of significance testing may show biased results.[TODO: verify]**
+
+Finally, I learned about other correction methods. There is one by @Hotelling1953. Another had beed suggested by @Olkin1958. @Alexander1990 summarises that the Hotelling correction is not superior to Fisher Z. The correction method by @Olkin1958 was more interesting. Not only was it more precise. I found out that @Olkin1958 did not only give us an approximate correction formula. They provided us with an [exact ... REALLY? TODO] estimate. Interestingly, nobody seemed to notice that. I did not find any paper investigating the [EXACT] approach. They always refer to the approximate one.
+
+All these correction methods are based on three assumptions, which are 1) bivariate normality, 2) large sample sizes, and 3) independence of observations. This first story about the issue will not extend insight beyond these assumptions.
+
+[QUESTIONS]
+
+
+## About Corey, Dunlap & Burke
+
+@Corey1998 investigated the nature of the bias when averaging correlation coefficients. In a Monte Carlo approach they investigated two different situations. They compared plain averaging and the corrected approach proposed by @Fisher1921.
+
+1. Experiment 1: Averaging correlation coefficients from a matrix
+2. Experiment 2: Averaging independent correlation coefficients
+
+They limited their approach to correlations between normally distributed data sets.
+
+The main questions of their study were:
+* How does the bias change with the correlation in the population $\rho$?
+* Does the bias change depending on sample size N?
+* Does it change depending on the number of samples k?
+
+What measures and visualisations will I use to answer these questions when comparing various methods?
+* Charts Rho $\times$ $\bar r$ for visual inspection.
+* Count where the predicted $\bar r$ is closer in one method compared to the other incl. she size and ditribution of those differences
+* The ["mean absolute deviation"](https://en.wikipedia.org/w/index.php?title=Average_absolute_deviation&oldid=939296257#Mean_absolute_deviation_around_a_central_point) from zero. Here abbreviated as *zad*
+
+
+## Averaging correlation coefficients from a matrix
+
+This paper will simulate averaged correlations with the following variations according to @Corey1998:
+* A range of correlations from 0.00 to 0.90
+* Averaging 3 to 45 correlations based on 3 to 10 intercorrelated data sets.
+* The score pairs (N) making up a single correlation varied between 10 to 50 in steps of 10
+
+Using these variations data sets were created, the correlation computed, and averaged afterwards. While they only used an uncorrected and a Fisher-z corrected average, this paper will add the Hotelling transformed correlations [@Hotelling1953]. Each transformed z was back-transformed to r afterwards. This process was repeated 10.000 times for each condition. The average correlations were summed up (seperately for each transformation, of course) and divded by the number of iterations.
+
+The bias is computed as the difference between the true Rho and the averaged correlation. ... TODO
+
+```{r Definitions, include=FALSE}
+library(RColorBrewer)
+library(psych)
+source("CorrAggBias.R")
+MakePlot <- function( n, m, Height = 0.05 ) {
+  # N <- seq(10, 50, 10) # sample size
+  D <- 3:10            # Data sets to correlate
+  N <- seq(10, 50, 10)   # sample size
+  R <- seq(0.00, 0.95, 0.05)  # Rho
+  Palette <- brewer.pal(n = length(D)+1, name = "PuRd")[(length(D)+1):2]
+  RangeY <- c(-Height, Height)
+  for(d in D) {
+    nChr <- as.character(n)
+    dChr <- as.character(d)
+    Color <- Palette[which(d==D)]
+    Means <- subset(Descr, group2==nChr & group3==dChr & group4==m, select = mean)
+    ScaleY <- max(abs(Means))
+    if(d == D[1]) {
+      plot(R, unlist(Means), ylim = RangeY, col = Color, type="l", lty=1,
+           sub = n, xlab = "r", ylab = "rho - r", oma = c(1, 2, 2, 2))
+      grid(nx = NA, ny = NULL, col = "lightgray")      
+    }
+    else
+      lines(R, unlist(Means), col = Color, type="l", lty=1)
+  }
+  abline(h = 0, col = "gray60")
+  text(0, y = min(RangeY), adj = 0, m)
+}
+
+
+CompareMethodsTable <- function(d1, d2) {
+  Select <- c("mean", "sd", "median", "mad", "min", "max", "range")
+  Description <- rbind( describe(d1$mean), describe(d2$mean) )
+  Description <- Description[,Select] # drop unwanted stats
+  # replace "median absolute deviation" with "zero absolute deviation
+  Description[1, "mad"] <- mean(abs(d1$mean))
+  Description[2, "mad"] <- mean(abs(d2$mean))
+  colnames(Description)[colnames(Description) == "mad"] <- "zad"
+  # determine number of values closer to zero
+  ctz1 <- sum( abs(d1$mean) < abs(d2$mean) )
+  ctz2 <- sum( abs(d1$mean) > abs(d2$mean) )
+  Description <- cbind(Description, CtZ = c(ctz1, ctz2))
+  # print
+  rownames(Description) <- c(levels(d1$group4), levels(d2$group4))
+  print(Description, digits = 3)
+}
+```
+
+
+## Replication
+
+This study replicates @Corey1998, first. We will investigate the averaged correlations $\bar r$ and the corrected correlations using Fisher z: $\bar r_z$. It enhances the precision a little. Here we computed 50.000 calculations instead of 10.000. We also provide not only the values 0.1,0.2, etc. but add the steps in between, too.
+
+The first plot shows the observed bias for uncorrected correlations.
+
+```{r Replication Plot 1, echo=FALSE}
+# Show replication plots
+old.par <- par(mfrow = c(1, 2), mar = c(4, 3, 0.5, 1)+0.1)
+load("./data/CoreyDunlapBurke_None_Avg.Rda")
+MakePlot(50, "None", Height = 0.0045)
+load("./data/CoreyDunlapBurke_Fisher_Avg.Rda")
+MakePlot(50, "Fisher", Height = 0.0045)
+par(old.par)
+rm(old.par)
+```
+
+The uncorrected bias is largest for intermediate values of $\rho$. After correcting them the maximum bias moves down to $\rho = 0.3$. 
+
+As expected, Fisher performs a lot better in general. The total range of the bias is only slightly smaller but the values are distributed more symmetrically around zero. Fishers average deviation from zero is a third of the uncorrected ones. It is not surprising, that Fisher returns a result that is closer to zero in 753 of 800 values. Clearly, Fisher z provides better results than the uncorrected averages.
+
+
+```{r Replication Stats, echo=FALSE}
+load("./data/CoreyDunlapBurke_None_Avg.Rda")
+d1 <- Descr
+load("./data/CoreyDunlapBurke_Fisher_Avg.Rda")
+d2 <- Descr
+CompareMethodsTable(d1, d2)
+```
+
+
+
+Unlike the corrected correlations, the uncorrected ones do not benefit much when more samples are being used. 
+
+```{r Replication Plot 2, include=FALSE}
+# Show replication plots
+
+```
+
+
+
+## Hotelling
+
+Hotellings correction does not get much attention in the literature. @Alexander1990 [citing @Alexander1985] claimed that Hotelling is not superior to Fisher's z. Let us compare Hotelling and Fisher z. At a first glance, it looks like Hotelling only changes the bias without doing much to alleviate it.It is extremely difficult to come to a conclusion visually.
+
+```{r Hotelling, echo=FALSE}
+old.par <- par(mfrow = c(1, 2), mar = c(4, 3, 0.5, 1)+0.1)
+load("./data/CoreyDunlapBurke_Fisher_Avg.Rda")
+MakePlot(50, "Fisher", Height = 0.0022)
+load("./data/CoreyDunlapBurke_Hotelling_Avg.Rda")
+MakePlot(50, "Hotelling", Height = 0.0022)
+par(old.par)
+rm(old.par)
+```
+
+The values in the table whos that it is a close race but Hotelling is finally the decisive nose behind. The range of values is the same and given the minimum and maximum one might hope that Hotelling offers a slight advantage because the distribution around zero might be more favourable. But in the end 8% percent of the simulated Fisher zs are closer to zero than Hotelling. The deviation from zero (zad) confirms that impression.
+
+```{r Hotelling Stats, echo=FALSE}
+load("./data/CoreyDunlapBurke_Fisher_Avg.Rda")
+d1 <- Descr
+load("./data/CoreyDunlapBurke_Hotelling_Avg.Rda")
+d2 <- Descr
+CompareMethodsTable(d1, d2)
+```
+
+
+```{r Hotelling Heatmap, echo=FALSE}
+load("./data/CoreyDunlapBurke_Fisher_Avg.Rda")
+# compute average deviation per Rho
+MF <- aggregate(Descr[, 8], list(Descr$group2, Descr$group3), mean)
+
+load("./data/CoreyDunlapBurke_Hotelling_Avg.Rda")
+MH <- aggregate(Descr[, 8], list(Descr$group2, Descr$group3), mean)
+
+MAll <- merge(MF, MH, by = c(1, 2), suffixes = c(".F",".H"))
+#cbind(MAll, abs(MAll["x.F"])  - abs(MAll["x.H"]))
+
+# The mtcars dataset:
+data <- matrix(unlist(abs(MAll["x.F"]) - abs(MAll["x.H"])), nrow=8)
+
+# Default Heatmap
+heatmap(data, scale="column", Colv = NA, Rowv = NA)
+#data
+```
+
+
+
+<!-- What is mostly neglected is the fact that Hotelling gave us two equations. A simpler one $z^*$ that he suggested is appropriate for larger samples and $z^{**}$ that should be used for small ones. -->
+
+<!-- ```{r Hotelling2, echo=FALSE} -->
+<!-- old.par <- par(mfrow = c(1, 2), mar = c(4, 3, 0.5, 1)+0.1) -->
+<!-- load("./data/CoreyDunlapBurke_Fisher_Avg.Rda") -->
+<!-- MakePlot(50, "Fisher", Height = 0.01) -->
+<!-- load("./data/CoreyDunlapBurke_Hotelling2_Avg.Rda") -->
+<!-- MakePlot(50, "Hotelling2", Height = 0.01) -->
+<!-- par(old.par) -->
+<!-- rm(old.par) -->
+<!-- ``` -->
+
+
+
+
+
+## Variations of Olkin & Pratt
+
+For one thing, authors use this correction by @Olkin1958:
+
+$$G(r) = r \cdot \left( 1 + \frac{1-r^2}{2 \cdot (n-k)} \right)$$
+with n being the degrees of freedom and $k = 3$, which @Olkin1958 used as approximation. 
+
+
+### k = 3
+
+Let us compare the $G(r)$ to the correction of Fisher. A visual inspection leaves no doubt that $G(r)$ is superior to Fishers z. The total range of values is smaller. But not only that. While other corrections show a bias that is linked to $\rho$, the $G(r)$ jumps up and down around the mean.
+
+```{r G(k), echo=FALSE}
+old.par <- par(mfrow = c(1, 2), mar = c(4, 3, 0.5, 1)+0.1)
+load("./data/CoreyDunlapBurke_Fisher_Avg.Rda")
+MakePlot(50, "Fisher", Height = 0.0022)
+load("./data/CoreyDunlapBurke_MinVar_Avg.Rda")
+MakePlot(50, "MinVar", Height = 0.0022)
+par(old.par)
+rm(old.par)
+
+```
+
+The numbers support that impression. The deviation around zero (zad) is less than a third. Accordingly, the less than 20% of the Fisher z values are closer to the zero than the $G(r)$ is.
+
+```{r MinVar Stats, echo=FALSE}
+load("./data/CoreyDunlapBurke_Fisher_Avg.Rda")
+d1 <- Descr
+load("./data/CoreyDunlapBurke_MinVar_Avg.Rda")
+d2 <- Descr
+CompareMethodsTable(d1, d2)
+```
+
+
+### The actual k
+
+In all publications (known to me) authors set k = 3. Interestingly, the exact value they provide for k is actually $k = (9 \sqrt{2} - 7) / 2 \approx 2.863961$. In 1958 and the need for pen and paper to do maths, this simplification was an improvement. With today's computing powers there is no reason not to use a more precise value. It makes no difference to a computer. But how much more precision will we get?
+
+```{r das wahre k}
+# The actual k
+(-7 + 9 * sqrt(2))/2
+```
+
+[% Abweichung; min, max, median für vers. Werte]
+
+
+```{r G_Vergleich, echo=FALSE}
+old.par <- par(mfrow = c(1, 2), mar = c(4, 3, 0.5, 1)+0.1)
+load("./data/CoreyDunlapBurke_MinVar_Avg.Rda")
+MakePlot(50, "MinVar", Height = 0.001)
+load("./data/CoreyDunlapBurke_TrueK_Avg.Rda")
+MakePlot(50, "TrueK", Height = 0.001)
+par(old.par)
+rm(old.par)
+```
+
+
+The visuals look promising. The range of the 'true' k bias is certainly smaller. But it is difficult to say much more. The numbers show a slight advantage of k=2.86... over k=3. The total range, the deviation from zero, the standard deviation are all smaller. All in all, 7.5% more values are closer to zero. Based on these data my conclusion is, that we should prefer the more accurate k over k=3. The advantage may be subtle but, to a computer, it makes no difference. 
+
+```{r True k Stats, echo=FALSE}
+load("./data/CoreyDunlapBurke_MinVar_Avg.Rda")
+d1 <- Descr
+load("./data/CoreyDunlapBurke_TrueK_Avg.Rda")
+d2 <- Descr
+CompareMethodsTable(d1, d2)
+```
+
+
+### The Precise @Olkin1958
+
+The numbers favour the precise algorithm. 
+
+```{r G Precise Vergleich, echo=FALSE}
+old.par <- par(mfrow = c(1, 2), mar = c(4, 3, 0.5, 1)+0.1)
+load("./data/CoreyDunlapBurke_TrueK_Avg.Rda")
+MakePlot(50, "TrueK", Height = 0.001)
+
+load("./data/CoreyDunlapBurke_Precise_Avg.Rda")
+MakePlot(50, "Precise", Height = 0.001)
+par(old.par)
+rm(old.par)
+```
+
+
+```{r Precise Stats, echo=FALSE}
+load("./data/CoreyDunlapBurke_TrueK_Avg.Rda")
+d1 <- Descr
+load("./data/CoreyDunlapBurke_Precise_Avg.Rda")
+d2 <- Descr
+CompareMethodsTable(d1, d2)
+```
+
+
+
+### Summary on @Olkin1958
+
+@Olkin1958 offer the most exact way to estimate an $\bar r$. It should be used with caution, though. If you simply want to average the correlation, it is fine to use it. But as @Alexander1990 [p. 335] concludes, "it should not be used for other purposes in validity generalization (meta-analysis) studies since its sampling distribution suffers from the same deficiencies as does r itself". 
+
+
+## Averging Determination Coefficients
+
+@Garcia2012 fights a passionate case against averaging correlations. In a way, he is totally right. Mathematically it is just wrong to average them. And all workarounds that we found, so far, have two severe drawnbacks. They provide us with a mere point estimator, the mean, but they do not consider the whole distribution. That makes statistical comparisons very difficult including confidence intervals. And they suffer when assumptions are violated, most of all the assumption of the normal distribution. 
+
+Because of that @Garcia2012 proposed the self-weighting method. 
+
+$$ \bar r^2 = { \sum s_{y_j}^2 r_j^2 \over \sum s_{y_j}^2 } $$
+
+But one thing is strange about that. If we use two bi-variate normally distributed variables and scale them to a standard deviation of 1, then the equations returns us nothing more (and nothing less) than the average of the squared correlation coefficients.
+
+$$ 
+  \bar{r}^2 = { \sum{1 r_j^2} \over \sum{1} } = { \sum r_j^2 \over {k} } \\
+  r = \sqrt{\bar{r}^2}
+$$
+
+But, see! The results are not acceptable at all. What happened here?
+
+```{r Line_Plot_Squared, echo=FALSE}
+old.par <- par(mfrow = c(1, 2), mar = c(4, 3, 0.5, 1)+0.1)
+load("./data/CoreyDunlapBurke_None_Avg.Rda")
+MakePlot(50, "None", Height = 0.01)
+load("./data/CoreyDunlapBurke_SimpleSquared_Avg.Rda")
+MakePlot(50, "Squared", Height = 0.01)
+par(old.par)
+rm(old.par)
+```
+
+The reasons are simple. There are random fluctuations in the data. Correlations sometimes come out negative even when the correlation of the population $\rho$ is positive. Because we square them before averaging the lose their sign. They increase the estimate when they should reduce it. Squaring the correlation simply loses the sign. That is what happens in the lower range. 
+
+
+
+## References
+
+
