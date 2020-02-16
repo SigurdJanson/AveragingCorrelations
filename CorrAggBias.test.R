@@ -302,13 +302,17 @@ test_that("MeanR", {
   expect_equal(MeanR(inp, c(4, 10, 4), "Hotelling"), 0)
   
   
-  # r²
+  # averaging sgn(r)*r²
   inp <- seq(-0.5, 0.5, 0.1)
-  expect_equal(MeanR(inp, 2, "Squared"), 0.31622776601683794)
+  expect_equal(MeanR(inp, 2, "Squared"), 0) #0.31622776601683794)
+  expect_equal(MeanR(inp, 20, "Squared"), 0) #0.31622776601683794)
+  expect_equal(MeanR(inp, 200, "Squared"), 0) #0.31622776601683794)
   
   inp <- seq(0.0, 1, 0.1)
   expect_equal(MeanR(inp, 2, "Squared"), sqrt(0.35))
   
+  inp <- 1
+  expect_equal(MeanR(inp, 2, "Squared"), 1)
   
   
   # Check errors
@@ -319,6 +323,10 @@ test_that("MeanR", {
                "Sample size 'N' must be larger than 1")
   expect_error(MeanR(inp, 1, "Hotelling"),
                "Sample size 'N' must be larger than 1")
+
+  expect_error(MeanR(inp, 0, "Squared"),
+               "Sample size 'N' must be larger than 1")
+  
   expect_error(MeanR(inp, 1, "Hotel"),
                "'arg' should be one of")
   expect_error(MeanR(inp, 1, "TotalerQuatsch"),

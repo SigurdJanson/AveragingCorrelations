@@ -1,7 +1,7 @@
 ---
 title: "Replication & Extension of Corey & Burkey"
 author: "Jan Seifert"
-date: "06 02 2020"
+date: "16 02 2020"
 bibliography: ./pub/AveragingCorrelations.bib
 csl: ./pub/apa-6th-edition.csl
 output: html_document
@@ -40,18 +40,22 @@ They limited their approach to correlations between normally distributed data se
 
 The main questions of their study were:
 * How does the bias change with the correlation in the population $\rho$?
-* Does the bias change depending on sample size N?
-* Does it change depending on the number of samples k?
+* Does the bias change depending on **sample size N**? 
+* Does it change depending on the **number of samples D** (with D for **d**ata set)? 
 
 What measures and visualisations will I use to answer these questions when comparing various methods?
-* Charts Rho $\times$ $\bar r$ for visual inspection.
-* Count where the predicted $\bar r$ is closer in one method compared to the other incl. she size and ditribution of those differences
-* The ["mean absolute deviation"](https://en.wikipedia.org/w/index.php?title=Average_absolute_deviation&oldid=939296257#Mean_absolute_deviation_around_a_central_point) from zero. Here abbreviated as *zad*
+
+* Charts Rho $\times$ $(\rho - \bar r)$ for visual inspection.
+* The ["mean absolute deviation"](https://en.wikipedia.org/w/index.php?title=Average_absolute_deviation&oldid=939296257#Mean_absolute_deviation_around_a_central_point) from zero. Here abbreviated as *zad*.
+* Count where the predicted $\bar r$ is closer in one method compared to the other incl. the size and distribution of those differences
+* Where appropriate I show heat maps that indicate which method is closer to $\rho$ for each combination of sample size and number of samples.
+
 
 
 ## Averaging correlation coefficients from a matrix
 
 This paper will simulate averaged correlations with the following variations according to @Corey1998:
+
 * A range of correlations from 0.00 to 0.90
 * Averaging 3 to 45 correlations based on 3 to 10 intercorrelated data sets.
 * The score pairs (N) making up a single correlation varied between 10 to 50 in steps of 10
@@ -63,7 +67,9 @@ The bias is computed as the difference between the true Rho and the averaged cor
 ```{r Definitions, include=FALSE}
 library(RColorBrewer)
 library(psych)
+library(gplots, quietly	= TRUE, warn.conflicts = FALSE)
 source("CorrAggBias.R")
+
 MakePlot <- function( n, m, Height = 0.05 ) {
   # N <- seq(10, 50, 10) # sample size
   D <- 3:10            # Data sets to correlate
@@ -104,7 +110,36 @@ CompareMethodsTable <- function(d1, d2) {
   Description <- cbind(Description, CtZ = c(ctz1, ctz2))
   # print
   rownames(Description) <- c(levels(d1$group4), levels(d2$group4))
-  print(Description, digits = 3)
+  
+  knitr::kable(Description,
+             caption = paste(rownames(Description)),
+             digits = 3)
+  #print(Description, digits = 3)
+}
+
+
+CompareByHeat <- function(d1, d2) {
+  DataLabels <- c(levels(d1$group4), levels(d2$group4))
+  # compute average deviation for each Rho
+  M1 <- aggregate(d1[, 8], list(Descr$group2, Descr$group3), median)
+  MH <- aggregate(d2[, 8], list(Descr$group2, Descr$group3), median)
+  
+  MAll <- merge(M1, MH, by = c(1, 2), suffixes = paste0(".", DataLabels))
+  Label1 <- paste0("x.", DataLabels[1])
+  Label2 <- paste0("x.", DataLabels[2])
+  data   <- matrix(unlist(abs(MAll[Label1]) - abs(MAll[Label2])), nrow=8)
+  
+  #Colors <- c("#8c510a", "#d8b365", "#f6e8c3", "#f5f5f5", "#c7eae5", "#5ab4ac", "#01665e")
+  Colors <- c('#8c510a','#bf812d','#dfc27d','#f6e8c3','#c7eae5','#80cdc1','#35978f','#01665e')
+  
+  # Default Heatmap
+  heatmap.2(data, scale="column", Colv = NA, Rowv = NA, dendrogram = "none",
+          xlab = "Sample size", labRow = 3:10,
+          ylab = "Data sets", labCol = seq(10, 50, 10),
+          main = paste("Comparison", DataLabels[1], "-", DataLabels[2]),
+          col = Colors, tracecol = "black",
+          key.title = "Colors & Histogram", 
+          key.xlab = paste0("|", DataLabels[1], "|-|", DataLabels[2], "|"))
 }
 ```
 
@@ -139,14 +174,8 @@ d2 <- Descr
 CompareMethodsTable(d1, d2)
 ```
 
-
-
 Unlike the corrected correlations, the uncorrected ones do not benefit much when more samples are being used. 
 
-```{r Replication Plot 2, include=FALSE}
-# Show replication plots
-
-```
 
 
 
@@ -164,7 +193,7 @@ par(old.par)
 rm(old.par)
 ```
 
-The values in the table whos that it is a close race but Hotelling is finally the decisive nose behind. The range of values is the same and given the minimum and maximum one might hope that Hotelling offers a slight advantage because the distribution around zero might be more favourable. But in the end 8% percent of the simulated Fisher zs are closer to zero than Hotelling. The deviation from zero (zad) confirms that impression.
+The values in the table show that it is a close race but Hotelling is finally a nose behind. The range of values is the same and given the minimum and maximum one might hope that Hotelling offers a slight advantage because the distribution around zero might be more favourable. But in the end 8% percent of the simulated Fisher zs are closer to zero than Hotelling. The deviation from zero (zad) confirms that impression.
 
 ```{r Hotelling Stats, echo=FALSE}
 load("./data/CoreyDunlapBurke_Fisher_Avg.Rda")
@@ -174,24 +203,14 @@ d2 <- Descr
 CompareMethodsTable(d1, d2)
 ```
 
+Because these two solutions are so close together I wanted to investigate this a little more. Is there a pattern that might help us choose one correction under specific circumstance? What we see in the heat map are the differences between Fisher and Hotelling z scores. The z scores have been aggregated with the median function giving us a combined devation for all values of $\rho$ for each combination of sample size and number of data sets. Brownish colours indicate that Fisher is closer to $\rho$ and greenish colours suggest the opposite. It is hard to say that there'd be a clear pattern. Hotelling outperforms Fisher in a few areas, especially when 4 or 5 data sets are being used. The histogram implies that advantages on the Fisher side are smaller but more widespread while Hotelling is commonly at a disadvantage but in those instances it outperforms Fisher, it does it by a lot. But is there a pattern that we can use to choose a better correction method based on the situation? The data here does not allow that conclusion.
 
 ```{r Hotelling Heatmap, echo=FALSE}
 load("./data/CoreyDunlapBurke_Fisher_Avg.Rda")
-# compute average deviation per Rho
-MF <- aggregate(Descr[, 8], list(Descr$group2, Descr$group3), mean)
-
+d1 <- Descr
 load("./data/CoreyDunlapBurke_Hotelling_Avg.Rda")
-MH <- aggregate(Descr[, 8], list(Descr$group2, Descr$group3), mean)
-
-MAll <- merge(MF, MH, by = c(1, 2), suffixes = c(".F",".H"))
-#cbind(MAll, abs(MAll["x.F"])  - abs(MAll["x.H"]))
-
-# The mtcars dataset:
-data <- matrix(unlist(abs(MAll["x.F"]) - abs(MAll["x.H"])), nrow=8)
-
-# Default Heatmap
-heatmap(data, scale="column", Colv = NA, Rowv = NA)
-#data
+d2 <- Descr
+CompareByHeat(d1, d2)
 ```
 
 
@@ -248,28 +267,27 @@ CompareMethodsTable(d1, d2)
 
 ### The actual k
 
-In all publications (known to me) authors set k = 3. Interestingly, the exact value they provide for k is actually $k = (9 \sqrt{2} - 7) / 2 \approx 2.863961$. In 1958 and the need for pen and paper to do maths, this simplification was an improvement. With today's computing powers there is no reason not to use a more precise value. It makes no difference to a computer. But how much more precision will we get?
+In all publications (known to me) authors set k = 3. Interestingly, the exact value they provide for k is actually $k = (9 \sqrt{2} - 7) / 2 \approx 2.863961$. In 1958 and the need for pen and paper to do maths, this simplification was an improvement. With today's computing powers there is no reason not to use a more precise value. But how much more precision will we get?
 
 ```{r das wahre k}
 # The actual k
 (-7 + 9 * sqrt(2))/2
 ```
 
-[% Abweichung; min, max, median für vers. Werte]
-
+Visually it look promising. I chose a sample size of n = 10 this time. For n = 50 it was hard to detect any differences. The 'true k' bias seemed to be in a smaller range but that was all there is to see.  The range of the 'true' k bias is certainly smaller. But it is difficult to say much more. To be honest, n = 10 does not allow to dinstinguish them either. It shows an interesting property of the Olkin & Pratt correction that we have not seen before. At the smallest sample sizes they drift twoards a larger bias when $\$rho$ increases. It seems that that drift of the 'true k' develops slower leading to better results.
 
 ```{r G_Vergleich, echo=FALSE}
 old.par <- par(mfrow = c(1, 2), mar = c(4, 3, 0.5, 1)+0.1)
 load("./data/CoreyDunlapBurke_MinVar_Avg.Rda")
-MakePlot(50, "MinVar", Height = 0.001)
+MakePlot(10, "MinVar", Height = 0.004)
 load("./data/CoreyDunlapBurke_TrueK_Avg.Rda")
-MakePlot(50, "TrueK", Height = 0.001)
+MakePlot(10, "TrueK", Height = 0.004)
 par(old.par)
 rm(old.par)
 ```
 
 
-The visuals look promising. The range of the 'true' k bias is certainly smaller. But it is difficult to say much more. The numbers show a slight advantage of k=2.86... over k=3. The total range, the deviation from zero, the standard deviation are all smaller. All in all, 7.5% more values are closer to zero. Based on these data my conclusion is, that we should prefer the more accurate k over k=3. The advantage may be subtle but, to a computer, it makes no difference. 
+The numbers show a slight advantage of k=2.86... over k=3. The total range, the deviation from zero, the standard deviation are all smaller. All in all, 7.5% more values are closer to zero. Based on these data my conclusion is, that we should prefer the more accurate k over k=3. The advantage may be subtle but, to a computer, it makes no difference. 
 
 ```{r True k Stats, echo=FALSE}
 load("./data/CoreyDunlapBurke_MinVar_Avg.Rda")
@@ -282,19 +300,20 @@ CompareMethodsTable(d1, d2)
 
 ### The Precise @Olkin1958
 
-The numbers favour the precise algorithm. 
+For the visual inspection I chose the sample size 10. There was not much to see for n = 50, meaning that it was not possible to see an advantage of either of the methods. Most authors agree that the averaging bias is stronger for smaller sample size and that is the reason why we see n = 10 now because that looks interesting. The approximate Olkin & Pratt estimate using the "true k" clearly reveals the drift to a larger bias when $\rho$ increases. Not so the precise version. There still is a bias and sometimes it gets even as high as 0.002 but the values stay closer to zero.
 
 ```{r G Precise Vergleich, echo=FALSE}
 old.par <- par(mfrow = c(1, 2), mar = c(4, 3, 0.5, 1)+0.1)
 load("./data/CoreyDunlapBurke_TrueK_Avg.Rda")
-MakePlot(50, "TrueK", Height = 0.001)
+MakePlot(10, "TrueK", Height = 0.004)
 
 load("./data/CoreyDunlapBurke_Precise_Avg.Rda")
-MakePlot(50, "Precise", Height = 0.001)
+MakePlot(10, "Precise", Height = 0.004)
 par(old.par)
 rm(old.par)
 ```
 
+The numbers favour the precise algorithm, too. The total range of the bias is considerably smaller (by 40%) and for over 60% of the simulated scenarios it shows better results.
 
 ```{r Precise Stats, echo=FALSE}
 load("./data/CoreyDunlapBurke_TrueK_Avg.Rda")
@@ -304,20 +323,33 @@ d2 <- Descr
 CompareMethodsTable(d1, d2)
 ```
 
+The heatmap comparison did not provide more insight which is why it is left out.
+
+```{r Precise O&P Heatmap, include=FALSE}
+load("./data/CoreyDunlapBurke_TrueK_Avg.Rda")
+d1 <- Descr
+load("./data/CoreyDunlapBurke_Precise_Avg.Rda")
+d2 <- Descr
+CompareByHeat(d1, d2)
+```
 
 
 ### Summary on @Olkin1958
 
-@Olkin1958 offer the most exact way to estimate an $\bar r$. It should be used with caution, though. If you simply want to average the correlation, it is fine to use it. But as @Alexander1990 [p. 335] concludes, "it should not be used for other purposes in validity generalization (meta-analysis) studies since its sampling distribution suffers from the same deficiencies as does r itself". 
+@Olkin1958 offer the most exact way to estimate an $\bar r$. It should be used with caution, though. If you simply want to average the correlation, it is fine to use it. But as @Alexander1990 [p. 335] concludes, "it should not be used for other purposes in validity generalization (meta-analysis) studies since its sampling distribution suffers from the same deficiencies as does r itself".
+
+When we use the Olkin & Pratt correction, I recommend the precise version. The average deviation from zero did not even show on the third digit. It is very slow to compute. This simulation took over a day to finish in R. Of course, normally you do not want to run the correction 40 million times and, therefore, the disadvantage in computation speed is negligible. If you need speed, use at least the 'true k'.
 
 
 ## Averging Determination Coefficients
 
-@Garcia2012 fights a passionate case against averaging correlations. In a way, he is totally right. Mathematically it is just wrong to average them. And all workarounds that we found, so far, have two severe drawnbacks. They provide us with a mere point estimator, the mean, but they do not consider the whole distribution. That makes statistical comparisons very difficult including confidence intervals. And they suffer when assumptions are violated, most of all the assumption of the normal distribution. 
+@Garcia2012 fights a passionate case against averaging correlations. In a way, he is totally right. Mathematically it is just wrong to average them. And all workarounds that we found, so far, have two severe drawbacks. They provide us with a mere point estimator, the mean, but they do not consider the whole distribution. That makes statistical comparisons very difficult including confidence intervals. And they suffer when assumptions are violated, most of all the assumption of the normal distribution. 
 
-Because of that @Garcia2012 proposed the self-weighting method. 
+Because of that @Garcia2012 proposed the self-weighting method. In contrast to $r$, he argues, the $r^2$ is additive.
 
 $$ \bar r^2 = { \sum s_{y_j}^2 r_j^2 \over \sum s_{y_j}^2 } $$
+
+### Averaging r Squared
 
 But one thing is strange about that. If we use two bi-variate normally distributed variables and scale them to a standard deviation of 1, then the equations returns us nothing more (and nothing less) than the average of the squared correlation coefficients.
 
@@ -326,19 +358,43 @@ $$
   r = \sqrt{\bar{r}^2}
 $$
 
-But, see! The results are not acceptable at all. What happened here?
+I put the equation into the same simulation as before and, see! The results are not acceptable at all. What happened here?
 
-```{r Line_Plot_Squared, echo=FALSE}
+```{r Simple Squared Line Plot, echo=FALSE}
 old.par <- par(mfrow = c(1, 2), mar = c(4, 3, 0.5, 1)+0.1)
 load("./data/CoreyDunlapBurke_None_Avg.Rda")
-MakePlot(50, "None", Height = 0.01)
+MakePlot(50, "None", Height = 0.1)
 load("./data/CoreyDunlapBurke_SimpleSquared_Avg.Rda")
-MakePlot(50, "Squared", Height = 0.01)
+MakePlot(50, "Squared", Height = 0.1)
 par(old.par)
 rm(old.par)
 ```
 
-The reasons are simple. There are random fluctuations in the data. Correlations sometimes come out negative even when the correlation of the population $\rho$ is positive. Because we square them before averaging the lose their sign. They increase the estimate when they should reduce it. Squaring the correlation simply loses the sign. That is what happens in the lower range. 
+The reasons are simple. There are random fluctuations in the data. Correlations sometimes come out negative even when the correlation of the population $\rho$ is positive. Because we square them before averaging the lose their sign. They increase the estimate when they should reduce it leading to an unacceptable overestimation. Squaring the correlation simply loses the sign. That is what happens in the lower range. And that is the picture for n = 50. It gets worse with smaller sample sizes.
+
+For larger values of $\rho$ (i.e. exceeding values of approximately 0.6) the averaging of $r^2$ underestimates $\rho$. [TODO]
+
+```{r Simple Suared Stats, echo=FALSE}
+load("./data/CoreyDunlapBurke_None_Avg.Rda")
+d1 <- Descr
+load("./data/CoreyDunlapBurke_SimpleSquared_Avg.Rda")
+d2 <- Descr
+CompareMethodsTable(d1, d2)
+```
+
+### Keeping the sign
+
+Following a gut feeling I thought: what if we square the correlations but simply keep the sign? In what way would that improve the results? But still, we cannot recommend using squared correlations at all. Using no correction at all is still better than squaring them before averaging.
+
+```{r Sign Squared Line Plot, echo=FALSE}
+old.par <- par(mfrow = c(1, 2), mar = c(4, 3, 0.5, 1)+0.1)
+load("./data/CoreyDunlapBurke_None_Avg.Rda")
+MakePlot(30, "None", Height = 0.05)
+load("./data/CoreyDunlapBurke_Squared_Avg.Rda")
+MakePlot(30, "Squared", Height = 0.05)
+par(old.par)
+rm(old.par)
+```
 
 
 

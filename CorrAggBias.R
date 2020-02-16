@@ -162,6 +162,7 @@ MinVarZ.pr <- function(r, n) {
 #' @references Statsoft Textbook. (2011). Basic Statistics. 
 #' Retrieved from http://www.statsoft.com/Textbook/Basic-Statistics#Correlationso
 #' at 2020-02-09
+#' @author Jan Seifert
 MeanR <- function( R, N, Method = c("None", "Fisher", "Hotelling", "Hotelling2",
                                     "MinVar", "TrueK", "Precise",
                                     "Squared"), ... ) {
@@ -174,7 +175,7 @@ MeanR <- function( R, N, Method = c("None", "Fisher", "Hotelling", "Hotelling2",
            MinVar = MeanR_MinVar(R, N, k = 3, ...),
            TrueK = MeanR_MinVar(R, N, ...),
            Precise = MeanR_Precise(R, N, ...),
-           Squared = sqrt(mean(R^2)),
+           Squared = MeanR_Squared(R, N, ...), #sqrt(mean(R^2)),
            MeanR_None(R, N, ...)
            )
   return(Res)
@@ -236,10 +237,18 @@ MeanR_MinVar <- function( R, N, k = (9*sqrt(2)-7)/2 ) {
   return(Mean)
 }
 
-#' MeanR_MinVar
-#' @describeIn MeanR Minimum variance estimator by Olkin & Pratt (1958)
-#' @references TODO
+#' MeanR_Precise
+#' @describeIn MeanR Minimum variance estimator by Olkin & Pratt (1958) 
+#' using the complex but more accurate equation
 MeanR_Precise <- function( R, N ) {
   Mean <- MeanR_None(MinVarZ.pr(R, N), N)
   return(Mean)
+}
+
+#' MeanR_Squared
+#' @describeIn MeanR Highly experimental function that squares r before averaging 
+#' but keeping the sign of it.
+MeanR_Squared <- function( R, N ) {
+  Mean <- MeanR_None(R^2 * sign(R), N)
+  return(sqrt(abs(Mean)) * sign(Mean))
 }
