@@ -7,18 +7,20 @@ library(psych)
 library("RColorBrewer")
 
 # Only needed when data needs to be updated
-M <- c("None", "Fisher", "Hotelling", "MinVar", "TrueK", "Precise")
+#M <- c("None", "Fisher", "Hotelling", "Hotelling2", "MinVar", "TrueK", "Precise")
+M <- c("None")
+DataStruc <- "Matrix"
 for(m in M) {
-  if(file.exists(file=paste("./data/CoreyDunlapBurke", m, "Raw.Rda", sep = "_"))) {
-    load(file=paste("./data/CoreyDunlapBurke", m, "Raw.Rda", sep = "_"))
+  if(file.exists(file=paste("./data/CoreyDunlapBurke", DataStruc, m, "Raw.Rda", sep = "_"))) {
+    load(file=paste("./data/CoreyDunlapBurke", DataStruc, m, "Raw.Rda", sep = "_"))
     summary(Result)
     
     Descr <- describeBy(Result[,"RDelta"], Result[,c("Rho", "SampleSize", "Samples", "Method")], 
                         skew = FALSE, digits=6, omit = TRUE, mat = TRUE )
-    save(Descr, file = paste("./data/CoreyDunlapBurke", m, "Avg.Rda", sep = "_"))
+    save(Descr, file = paste("./data/CoreyDunlapBurke", DataStruc, m, "Avg.Rda", sep = "_"))
   }
 }
-rm(M, m)
+rm(M, m, DataStruc)
 
 
 # PLAUSIBILITY ----
@@ -68,7 +70,6 @@ MakePlot <- function( n, m ) {
   RangeY <- c(-0.005, 0.005)
   for(d in D) {
     nChr <- as.character(n)
-    #Color <- Palette[which(n==N)]
     dChr <- as.character(d)
     Color <- Palette[which(d==D)]
     Means <- subset(Descr, group2==nChr & group3==dChr & group4==m, select = mean)

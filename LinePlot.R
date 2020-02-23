@@ -41,7 +41,8 @@ SimpleLinePlot <- function( n, m, Height = 0.05 ) {
 #' selects a number of data sets and vice versa.
 LinePlot <- function(m1, m2 = NULL, 
                      Lines = c("Sample Size", "Data Sets"), 
-                     Selected = 50) {
+                     Selected = 50,
+                     DataStruc = "Matrix") {
   require(ggplot2, quietly	= TRUE, warn.conflicts = FALSE)
   if(!is.null(m2)) require(gridExtra, quietly	= TRUE, warn.conflicts = FALSE)
   
@@ -83,7 +84,7 @@ LinePlot <- function(m1, m2 = NULL,
   # load data and reshape into wide form
   SelectVar <- paste0("group", 1:4)
   SelectVar <- SelectVar[SelectVar != ShapeVar]
-  load(paste0("./data/CoreyDunlapBurke_", m1, "_Avg.Rda"))
+  load(paste0("./data/CoreyDunlapBurke_", DataStruc, "_", m1, "_Avg.Rda"))
   d1 <- reshape(Descr, v.names = "mean", timevar = ShapeVar, direction = "wide", 
                 idvar = SelectVar, 
                 drop  = c("item", "n", "vars", "sd", "min", "max", "se", "range"))
@@ -94,7 +95,7 @@ LinePlot <- function(m1, m2 = NULL,
   }
   
   if(!is.null(m2)) {
-    load(paste0("./data/CoreyDunlapBurke_", m2, "_Avg.Rda"))
+    load(paste0("./data/CoreyDunlapBurke_",  DataStruc, "_", m2, "_Avg.Rda"))
     d2 <- reshape(Descr, v.names = "mean", timevar = ShapeVar, direction = "wide", 
                   idvar = SelectVar, 
                   drop  = c("item", "n", "vars", "sd", "min", "max", "se", "range"))

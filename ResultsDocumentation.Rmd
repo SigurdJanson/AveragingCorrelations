@@ -89,9 +89,9 @@ As expected, Fisher performs a lot better in general. The total range of the bia
 
 
 ```{r Replication Stats, echo=FALSE}
-load("./data/CoreyDunlapBurke_None_Avg.Rda")
+load("./data/CoreyDunlapBurke_Matrix_None_Avg.Rda")
 d1 <- Descr
-load("./data/CoreyDunlapBurke_Fisher_Avg.Rda")
+load("./data/CoreyDunlapBurke_Matrix_Fisher_Avg.Rda")
 d2 <- Descr
 CompareMethodsTable(d1, d2)
 ```
@@ -115,9 +115,9 @@ LinePlot("Fisher", "Hotelling", Lines = "Data Sets", Selected = 50)
 The values in the table show that it is a close race but Hotelling is finally a nose behind. The range of values is the same and given the minimum and maximum one might hope that Hotelling offers a slight advantage because the distribution around zero might be more favourable. But in the end 8% percent of the simulated Fisher zs are closer to zero than Hotelling. The deviation from zero (zad) confirms that impression.
 
 ```{r Hotelling Stats, echo=FALSE}
-load("./data/CoreyDunlapBurke_Fisher_Avg.Rda")
+load("./data/CoreyDunlapBurke_Matrix_Fisher_Avg.Rda")
 d1 <- Descr
-load("./data/CoreyDunlapBurke_Hotelling_Avg.Rda")
+load("./data/CoreyDunlapBurke_Matrix_Hotelling_Avg.Rda")
 d2 <- Descr
 CompareMethodsTable(d1, d2)
 ```
@@ -125,9 +125,9 @@ CompareMethodsTable(d1, d2)
 Because these two solutions are so close together I wanted to investigate this a little more. Is there a pattern that might help us choose one correction under specific circumstance? What we see in the heat map are the differences between Fisher and Hotelling z scores. The z scores have been aggregated with the median function giving us a combined devation for all values of $\rho$ for each combination of sample size and number of data sets. Brownish colours indicate that Fisher is closer to $\rho$ and greenish colours suggest the opposite. It is hard to say that there'd be a clear pattern. Hotelling outperforms Fisher in a few areas, especially when 4 or 5 data sets are being used. The histogram implies that advantages on the Fisher side are smaller but more widespread while Hotelling is commonly at a disadvantage but in those instances it outperforms Fisher, it does it by a lot. But is there a pattern that we can use to choose a better correction method based on the situation? The data here does not allow that conclusion.
 
 ```{r Hotelling Heatmap, echo=FALSE}
-load("./data/CoreyDunlapBurke_Fisher_Avg.Rda")
+load("./data/CoreyDunlapBurke_Matrix_Fisher_Avg.Rda")
 d1 <- Descr
-load("./data/CoreyDunlapBurke_Hotelling_Avg.Rda")
+load("./data/CoreyDunlapBurke_Matrix_Hotelling_Avg.Rda")
 d2 <- Descr
 CompareByHeat(d1, d2)
 PlayViolin("Fisher", "Hotelling")
@@ -170,9 +170,9 @@ LinePlot("Fisher", "MinVar", Lines = "Data Sets", Selected = 50)
 The numbers support that impression. The deviation around zero (zad) is less than a third. Accordingly, the less than 20% of the Fisher z values are closer to the zero than the $G(r)$ is.
 
 ```{r MinVar Stats, echo=FALSE}
-load("./data/CoreyDunlapBurke_Fisher_Avg.Rda")
+load("./data/CoreyDunlapBurke_Matrix_Fisher_Avg.Rda")
 d1 <- Descr
-load("./data/CoreyDunlapBurke_MinVar_Avg.Rda")
+load("./data/CoreyDunlapBurke_Matrix_MinVar_Avg.Rda")
 d2 <- Descr
 CompareMethodsTable(d1, d2)
 ```
@@ -202,9 +202,9 @@ LinePlot("MinVar", "TrueK", Lines = "Data Sets", Selected = 10)
 The numbers show a slight advantage of k=2.86... over k=3. The total range, the deviation from zero, the standard deviation are all smaller. All in all, 7.5% more values are closer to zero. Based on these data my conclusion is, that we should prefer the more accurate k over k=3. The advantage may be subtle but, to a computer, it makes no difference. 
 
 ```{r True k Stats, echo=FALSE}
-load("./data/CoreyDunlapBurke_MinVar_Avg.Rda")
+load("./data/CoreyDunlapBurke_Matrix_MinVar_Avg.Rda")
 d1 <- Descr
-load("./data/CoreyDunlapBurke_TrueK_Avg.Rda")
+load("./data/CoreyDunlapBurke_Matrix_TrueK_Avg.Rda")
 d2 <- Descr
 CompareMethodsTable(d1, d2)
 ```
@@ -228,9 +228,9 @@ LinePlot("TrueK", "Precise", Lines = "Data Sets", Selected = 10)
 The numbers favour the precise algorithm, too. The total range of the bias is considerably smaller (by 40%) and for over 60% of the simulated scenarios it shows better results.
 
 ```{r Precise Stats, echo=FALSE}
-load("./data/CoreyDunlapBurke_TrueK_Avg.Rda")
+load("./data/CoreyDunlapBurke_Matrix_TrueK_Avg.Rda")
 d1 <- Descr
-load("./data/CoreyDunlapBurke_Precise_Avg.Rda")
+load("./data/CoreyDunlapBurke_Matrix_Precise_Avg.Rda")
 d2 <- Descr
 CompareMethodsTable(d1, d2)
 ```
@@ -238,9 +238,9 @@ CompareMethodsTable(d1, d2)
 The heatmap comparison did not provide more insight which is why it is left out.
 
 ```{r Precise O&P Heatmap, include=FALSE}
-load("./data/CoreyDunlapBurke_TrueK_Avg.Rda")
+load("./data/CoreyDunlapBurke_Matrix_TrueK_Avg.Rda")
 d1 <- Descr
-load("./data/CoreyDunlapBurke_Precise_Avg.Rda")
+load("./data/CoreyDunlapBurke_Matrix_Precise_Avg.Rda")
 d2 <- Descr
 CompareByHeat(d1, d2)
 ```
@@ -287,9 +287,9 @@ The reasons are simple. There are random fluctuations in the data. Correlations 
 For larger values of $\rho$ (i.e. exceeding values of approximately 0.6) the averaging of $r^2$ underestimates $\rho$. [TODO]
 
 ```{r Simple Suared Stats, echo=FALSE}
-load("./data/CoreyDunlapBurke_None_Avg.Rda")
+load("./data/CoreyDunlapBurke_Matrix_None_Avg.Rda")
 d1 <- Descr
-load("./data/CoreyDunlapBurke_SimpleSquared_Avg.Rda")
+load("./data/CoreyDunlapBurke_Matrix_SimpleSquared_Avg.Rda")
 d2 <- Descr
 CompareMethodsTable(d1, d2)
 ```
@@ -303,6 +303,30 @@ LinePlot("None", "Squared", Lines = "Data Sets", Selected = 30)
 ```
 
 
+## Fisher again - Moving to Independent Correlations
+
+```{r Fisher Lines Indie, echo=FALSE}
+LinePlot("None", "Fisher", Lines = "Sample Size", Selected = 10, DataStruc = "Indie")
+```
+
+
+```{r Fisher Indie Stats, echo=FALSE}
+load("./data/CoreyDunlapBurke_Indie_None_Avg.Rda")
+d1 <- Descr
+load("./data/CoreyDunlapBurke_Indie_Fisher_Avg.Rda")
+d2 <- Descr
+CompareMethodsTable(d1, d2)
+```
+
+
+```{r Fisher Indie Heatmap, echo=FALSE}
+load("./data/CoreyDunlapBurke_Indie_None_Avg.Rda")
+d1 <- Descr
+load("./data/CoreyDunlapBurke_Indie_Fisher_Avg.Rda")
+d2 <- Descr
+CompareByHeat(d1, d2)
+PlayViolin("None", "Fisher", DataStruc = "Indie")
+```
 
 ## References
 

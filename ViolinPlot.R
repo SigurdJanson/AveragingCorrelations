@@ -1,11 +1,11 @@
 # Create a violin plot
-PlayViolin <- function(m1, m2) {
+PlayViolin <- function(m1, m2, DataStruc = "Matrix") {
   require(ggplot2, quietly	= TRUE, warn.conflicts = FALSE)
   theme_set(theme_gray(base_size = 10))
   
-  load(paste0("./data/CoreyDunlapBurke_", m1, "_Avg.Rda"))
+  load(paste0("./data/CoreyDunlapBurke_", DataStruc, "_", m1, "_Avg.Rda"))
   d1 <- Descr
-  load(paste0("./data/CoreyDunlapBurke_", m2, "_Avg.Rda"))
+  load(paste0("./data/CoreyDunlapBurke_", DataStruc, "_", m2, "_Avg.Rda"))
   d2 <- Descr
   
   Description <- rbind( d1, d2 )
