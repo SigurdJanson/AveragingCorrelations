@@ -15,7 +15,7 @@ __It is not possible to average correlation coefficients__. In my studies in the
 
 First of all, mathematically it is true: the mere average of several correlation coefficients makes no sense. Correlations are not additive is the "simple" way to say it. That means something like this.
 
-$$ {1 \over n} \cdot (r_{x_1, y_1} + r_{x_2, y_2} + ... + r_{x_n, y_n})   \ne  Correlation(x_1 ... x_n, y_1 ... y_n) $$
+$$ {1 \over D} \cdot (r_{x_1, y_1} + r_{x_2, y_2} + ... + r_{x_D, y_D})   \ne  Correlation(x_1, y_1 ... x_D, y_D) $$
 
 
 After some digging I found that the problem is negligible in many cases. If the sample sizes N are large enough then the bias shows only on the third digit. Even without Fisher Z "the absolute bias becomes negligible (less than .01) for a sample size greater than 20" [@Bishara2015].
@@ -56,91 +56,20 @@ What measures and visualisations will I use to answer these questions when compa
 
 This paper will simulate averaged correlations with the following variations according to @Corey1998:
 
-* A range of correlations from 0.00 to 0.90
+* A range of correlations from 0.00 to 0.95 ins steps of .05.
 * Averaging 3 to 45 correlations based on 3 to 10 intercorrelated data sets.
 * The score pairs (N) making up a single correlation varied between 10 to 50 in steps of 10
 
 Using these variations data sets were created, the correlation computed, and averaged afterwards. While they only used an uncorrected and a Fisher-z corrected average, this paper will add the Hotelling transformed correlations [@Hotelling1953]. Each transformed z was back-transformed to r afterwards. This process was repeated 10.000 times for each condition. The average correlations were summed up (seperately for each transformation, of course) and divded by the number of iterations.
 
-The bias is computed as the difference between the true Rho and the averaged correlation. ... TODO
+The bias is shown as the difference between the theoretical correlation $\rho$ (Rho) and the averaged sample correlations.
 
 ```{r Definitions, include=FALSE}
-library(RColorBrewer)
-library(psych)
-library(gplots, quietly	= TRUE, warn.conflicts = FALSE)
 source("CorrAggBias.R")
-
-MakePlot <- function( n, m, Height = 0.05 ) {
-  # N <- seq(10, 50, 10) # sample size
-  D <- 3:10            # Data sets to correlate
-  N <- seq(10, 50, 10)   # sample size
-  R <- seq(0.00, 0.95, 0.05)  # Rho
-  Palette <- brewer.pal(n = length(D)+1, name = "PuRd")[(length(D)+1):2]
-  RangeY <- c(-Height, Height)
-  for(d in D) {
-    nChr <- as.character(n)
-    dChr <- as.character(d)
-    Color <- Palette[which(d==D)]
-    Means <- subset(Descr, group2==nChr & group3==dChr & group4==m, select = mean)
-    ScaleY <- max(abs(Means))
-    if(d == D[1]) {
-      plot(R, unlist(Means), ylim = RangeY, col = Color, type="l", lty=1,
-           sub = n, xlab = "r", ylab = "rho - r", oma = c(1, 2, 2, 2))
-      grid(nx = NA, ny = NULL, col = "lightgray")      
-    }
-    else
-      lines(R, unlist(Means), col = Color, type="l", lty=1)
-  }
-  abline(h = 0, col = "gray60")
-  text(0, y = min(RangeY), adj = 0, m)
-}
-
-
-CompareMethodsTable <- function(d1, d2) {
-  Select <- c("mean", "sd", "median", "mad", "min", "max", "range")
-  Description <- rbind( describe(d1$mean), describe(d2$mean) )
-  Description <- Description[,Select] # drop unwanted stats
-  # replace "median absolute deviation" with "zero absolute deviation
-  Description[1, "mad"] <- mean(abs(d1$mean))
-  Description[2, "mad"] <- mean(abs(d2$mean))
-  colnames(Description)[colnames(Description) == "mad"] <- "zad"
-  # determine number of values closer to zero
-  ctz1 <- sum( abs(d1$mean) < abs(d2$mean) )
-  ctz2 <- sum( abs(d1$mean) > abs(d2$mean) )
-  Description <- cbind(Description, CtZ = c(ctz1, ctz2))
-  # print
-  rownames(Description) <- c(levels(d1$group4), levels(d2$group4))
-  
-  knitr::kable(Description,
-             caption = paste(rownames(Description)),
-             digits = 3)
-  #print(Description, digits = 3)
-}
-
-
-CompareByHeat <- function(d1, d2) {
-  DataLabels <- c(levels(d1$group4), levels(d2$group4))
-  # compute average deviation for each Rho
-  M1 <- aggregate(d1[, 8], list(Descr$group2, Descr$group3), median)
-  MH <- aggregate(d2[, 8], list(Descr$group2, Descr$group3), median)
-  
-  MAll <- merge(M1, MH, by = c(1, 2), suffixes = paste0(".", DataLabels))
-  Label1 <- paste0("x.", DataLabels[1])
-  Label2 <- paste0("x.", DataLabels[2])
-  data   <- matrix(unlist(abs(MAll[Label1]) - abs(MAll[Label2])), nrow=8)
-  
-  #Colors <- c("#8c510a", "#d8b365", "#f6e8c3", "#f5f5f5", "#c7eae5", "#5ab4ac", "#01665e")
-  Colors <- c('#8c510a','#bf812d','#dfc27d','#f6e8c3','#c7eae5','#80cdc1','#35978f','#01665e')
-  
-  # Default Heatmap
-  heatmap.2(data, scale="column", Colv = NA, Rowv = NA, dendrogram = "none",
-          xlab = "Sample size", labRow = 3:10,
-          ylab = "Data sets", labCol = seq(10, 50, 10),
-          main = paste("Comparison", DataLabels[1], "-", DataLabels[2]),
-          col = Colors, tracecol = "black",
-          key.title = "Colors & Histogram", 
-          key.xlab = paste0("|", DataLabels[1], "|-|", DataLabels[2], "|"))
-}
+source("LinePlot.R")
+source("ViolinPlot.R")
+source("Heatmaps.R")
+source("CompareMethodsTables.R")
 ```
 
 
@@ -151,14 +80,7 @@ This study replicates @Corey1998, first. We will investigate the averaged correl
 The first plot shows the observed bias for uncorrected correlations.
 
 ```{r Replication Plot 1, echo=FALSE}
-# Show replication plots
-old.par <- par(mfrow = c(1, 2), mar = c(4, 3, 0.5, 1)+0.1)
-load("./data/CoreyDunlapBurke_None_Avg.Rda")
-MakePlot(50, "None", Height = 0.0045)
-load("./data/CoreyDunlapBurke_Fisher_Avg.Rda")
-MakePlot(50, "Fisher", Height = 0.0045)
-par(old.par)
-rm(old.par)
+LinePlot("None", "Fisher", Lines = "Data Sets", Selected = 50)
 ```
 
 The uncorrected bias is largest for intermediate values of $\rho$. After correcting them the maximum bias moves down to $\rho = 0.3$. 
@@ -176,7 +98,10 @@ CompareMethodsTable(d1, d2)
 
 Unlike the corrected correlations, the uncorrected ones do not benefit much when more samples are being used. 
 
+```{r Violin: None, echo=FALSE}
+PlayViolin("None", "Fisher")
 
+```
 
 
 ## Hotelling
@@ -184,13 +109,7 @@ Unlike the corrected correlations, the uncorrected ones do not benefit much when
 Hotellings correction does not get much attention in the literature. @Alexander1990 [citing @Alexander1985] claimed that Hotelling is not superior to Fisher's z. Let us compare Hotelling and Fisher z. At a first glance, it looks like Hotelling only changes the bias without doing much to alleviate it.It is extremely difficult to come to a conclusion visually.
 
 ```{r Hotelling, echo=FALSE}
-old.par <- par(mfrow = c(1, 2), mar = c(4, 3, 0.5, 1)+0.1)
-load("./data/CoreyDunlapBurke_Fisher_Avg.Rda")
-MakePlot(50, "Fisher", Height = 0.0022)
-load("./data/CoreyDunlapBurke_Hotelling_Avg.Rda")
-MakePlot(50, "Hotelling", Height = 0.0022)
-par(old.par)
-rm(old.par)
+LinePlot("Fisher", "Hotelling", Lines = "Data Sets", Selected = 50)
 ```
 
 The values in the table show that it is a close race but Hotelling is finally a nose behind. The range of values is the same and given the minimum and maximum one might hope that Hotelling offers a slight advantage because the distribution around zero might be more favourable. But in the end 8% percent of the simulated Fisher zs are closer to zero than Hotelling. The deviation from zero (zad) confirms that impression.
@@ -211,6 +130,7 @@ d1 <- Descr
 load("./data/CoreyDunlapBurke_Hotelling_Avg.Rda")
 d2 <- Descr
 CompareByHeat(d1, d2)
+PlayViolin("Fisher", "Hotelling")
 ```
 
 
@@ -233,7 +153,7 @@ CompareByHeat(d1, d2)
 
 ## Variations of Olkin & Pratt
 
-For one thing, authors use this correction by @Olkin1958:
+@Olkin1958 proposed a minimum-variance estimator:
 
 $$G(r) = r \cdot \left( 1 + \frac{1-r^2}{2 \cdot (n-k)} \right)$$
 with n being the degrees of freedom and $k = 3$, which @Olkin1958 used as approximation. 
@@ -244,14 +164,7 @@ with n being the degrees of freedom and $k = 3$, which @Olkin1958 used as approx
 Let us compare the $G(r)$ to the correction of Fisher. A visual inspection leaves no doubt that $G(r)$ is superior to Fishers z. The total range of values is smaller. But not only that. While other corrections show a bias that is linked to $\rho$, the $G(r)$ jumps up and down around the mean.
 
 ```{r G(k), echo=FALSE}
-old.par <- par(mfrow = c(1, 2), mar = c(4, 3, 0.5, 1)+0.1)
-load("./data/CoreyDunlapBurke_Fisher_Avg.Rda")
-MakePlot(50, "Fisher", Height = 0.0022)
-load("./data/CoreyDunlapBurke_MinVar_Avg.Rda")
-MakePlot(50, "MinVar", Height = 0.0022)
-par(old.par)
-rm(old.par)
-
+LinePlot("Fisher", "MinVar", Lines = "Data Sets", Selected = 50)
 ```
 
 The numbers support that impression. The deviation around zero (zad) is less than a third. Accordingly, the less than 20% of the Fisher z values are closer to the zero than the $G(r)$ is.
@@ -263,6 +176,11 @@ load("./data/CoreyDunlapBurke_MinVar_Avg.Rda")
 d2 <- Descr
 CompareMethodsTable(d1, d2)
 ```
+
+```{r MinVar-Fisher Violin, echo=FALSE}
+PlayViolin("Fisher", "MinVar")
+```
+
 
 
 ### The actual k
@@ -277,13 +195,7 @@ In all publications (known to me) authors set k = 3. Interestingly, the exact va
 Visually it look promising. I chose a sample size of n = 10 this time. For n = 50 it was hard to detect any differences. The 'true k' bias seemed to be in a smaller range but that was all there is to see.  The range of the 'true' k bias is certainly smaller. But it is difficult to say much more. To be honest, n = 10 does not allow to dinstinguish them either. It shows an interesting property of the Olkin & Pratt correction that we have not seen before. At the smallest sample sizes they drift twoards a larger bias when $\$rho$ increases. It seems that that drift of the 'true k' develops slower leading to better results.
 
 ```{r G_Vergleich, echo=FALSE}
-old.par <- par(mfrow = c(1, 2), mar = c(4, 3, 0.5, 1)+0.1)
-load("./data/CoreyDunlapBurke_MinVar_Avg.Rda")
-MakePlot(10, "MinVar", Height = 0.004)
-load("./data/CoreyDunlapBurke_TrueK_Avg.Rda")
-MakePlot(10, "TrueK", Height = 0.004)
-par(old.par)
-rm(old.par)
+LinePlot("MinVar", "TrueK", Lines = "Data Sets", Selected = 10)
 ```
 
 
@@ -298,19 +210,19 @@ CompareMethodsTable(d1, d2)
 ```
 
 
+```{r MinVar-TrueK Violin, echo=FALSE}
+PlayViolin("MinVar", "TrueK")
+
+```
+
+
+
 ### The Precise @Olkin1958
 
 For the visual inspection I chose the sample size 10. There was not much to see for n = 50, meaning that it was not possible to see an advantage of either of the methods. Most authors agree that the averaging bias is stronger for smaller sample size and that is the reason why we see n = 10 now because that looks interesting. The approximate Olkin & Pratt estimate using the "true k" clearly reveals the drift to a larger bias when $\rho$ increases. Not so the precise version. There still is a bias and sometimes it gets even as high as 0.002 but the values stay closer to zero.
 
 ```{r G Precise Vergleich, echo=FALSE}
-old.par <- par(mfrow = c(1, 2), mar = c(4, 3, 0.5, 1)+0.1)
-load("./data/CoreyDunlapBurke_TrueK_Avg.Rda")
-MakePlot(10, "TrueK", Height = 0.004)
-
-load("./data/CoreyDunlapBurke_Precise_Avg.Rda")
-MakePlot(10, "Precise", Height = 0.004)
-par(old.par)
-rm(old.par)
+LinePlot("TrueK", "Precise", Lines = "Data Sets", Selected = 10)
 ```
 
 The numbers favour the precise algorithm, too. The total range of the bias is considerably smaller (by 40%) and for over 60% of the simulated scenarios it shows better results.
@@ -331,6 +243,12 @@ d1 <- Descr
 load("./data/CoreyDunlapBurke_Precise_Avg.Rda")
 d2 <- Descr
 CompareByHeat(d1, d2)
+```
+
+
+```{r Precise-TrueK Violin, echo=FALSE}
+PlayViolin("TrueK", "Precise")
+
 ```
 
 
@@ -361,13 +279,7 @@ $$
 I put the equation into the same simulation as before and, see! The results are not acceptable at all. What happened here?
 
 ```{r Simple Squared Line Plot, echo=FALSE}
-old.par <- par(mfrow = c(1, 2), mar = c(4, 3, 0.5, 1)+0.1)
-load("./data/CoreyDunlapBurke_None_Avg.Rda")
-MakePlot(50, "None", Height = 0.1)
-load("./data/CoreyDunlapBurke_SimpleSquared_Avg.Rda")
-MakePlot(50, "Squared", Height = 0.1)
-par(old.par)
-rm(old.par)
+LinePlot("None", "SimpleSquared", Lines = "Data Sets", Selected = 50)
 ```
 
 The reasons are simple. There are random fluctuations in the data. Correlations sometimes come out negative even when the correlation of the population $\rho$ is positive. Because we square them before averaging the lose their sign. They increase the estimate when they should reduce it leading to an unacceptable overestimation. Squaring the correlation simply loses the sign. That is what happens in the lower range. And that is the picture for n = 50. It gets worse with smaller sample sizes.
@@ -387,13 +299,7 @@ CompareMethodsTable(d1, d2)
 Following a gut feeling I thought: what if we square the correlations but simply keep the sign? In what way would that improve the results? But still, we cannot recommend using squared correlations at all. Using no correction at all is still better than squaring them before averaging.
 
 ```{r Sign Squared Line Plot, echo=FALSE}
-old.par <- par(mfrow = c(1, 2), mar = c(4, 3, 0.5, 1)+0.1)
-load("./data/CoreyDunlapBurke_None_Avg.Rda")
-MakePlot(30, "None", Height = 0.05)
-load("./data/CoreyDunlapBurke_Squared_Avg.Rda")
-MakePlot(30, "Squared", Height = 0.05)
-par(old.par)
-rm(old.par)
+LinePlot("None", "Squared", Lines = "Data Sets", Selected = 30)
 ```
 
 
