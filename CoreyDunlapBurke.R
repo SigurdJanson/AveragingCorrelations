@@ -1,26 +1,32 @@
 #
-# Analyses for Corey, Dunlap & Burke 
 #
 
 library(DataExplorer)
-library(psych)
 library("RColorBrewer")
 
-# Only needed when data needs to be updated
-#M <- c("None", "Fisher", "Hotelling", "Hotelling2", "MinVar", "TrueK", "Precise")
-M <- c("None")
-DataStruc <- "Matrix"
-for(m in M) {
-  if(file.exists(file=paste("./data/CoreyDunlapBurke", DataStruc, m, "Raw.Rda", sep = "_"))) {
-    load(file=paste("./data/CoreyDunlapBurke", DataStruc, m, "Raw.Rda", sep = "_"))
-    summary(Result)
-    
-    Descr <- describeBy(Result[,"RDelta"], Result[,c("Rho", "SampleSize", "Samples", "Method")], 
-                        skew = FALSE, digits=6, omit = TRUE, mat = TRUE )
-    save(Descr, file = paste("./data/CoreyDunlapBurke", DataStruc, m, "Avg.Rda", sep = "_"))
+#' AggregateAvgCorSim
+#' Load the complete simulation data and average it for all combinations of 
+#' Rho, Sample sizes, and Data sets
+#' @param M One or several of these:
+#'  None, Fisher, Hotelling, Hotelling2, MinVar, TrueK, Precise
+#' @param DataStruc Either 'Matrix' or 'Indie'
+#' @note Only needed when data needs to be updated
+AggregateAvgCorSim <- function(M, DataStruc) {
+  require(psych)
+  for(m in M) {
+    if(file.exists(file=paste("./data/CoreyDunlapBurke", DataStruc, m, "Raw.Rda", sep = "_"))) {
+      load(file=paste("./data/CoreyDunlapBurke", DataStruc, m, "Raw.Rda", sep = "_"))
+      summary(Result)
+      
+      Descr <- describeBy(Result[,"RDelta"], Result[,c("Rho", "SampleSize", "Samples", "Method")], 
+                          skew = FALSE, digits=6, omit = TRUE, mat = TRUE )
+      save(Descr, file = paste("./data/CoreyDunlapBurke", DataStruc, m, "Avg.Rda", sep = "_"))
+    }
   }
 }
-rm(M, m, DataStruc)
+AggregateAvgCorSim("TrueK", "Indie")
+rm(AggregateAvgCorSim)
+
 
 
 # PLAUSIBILITY ----
@@ -54,46 +60,15 @@ quantile(Result$RDelta, probs = seq(0, 1, 0.1))
 
 # ANALYSIS ----
 
-# Get aggregated data
-# if(!exists("Descr")) {
-#   Descr <- describeBy(Result[,"RDelta"], Result[,c("Rho", "SampleSize", "Samples", "Method")], 
-#                       skew = FALSE, digits=6, omit = TRUE, mat = TRUE )
-#   save(Descr, file = "./data/CoreyDunlapBurke.MinVarTruek.Avg.Rda")
-# }
 
-
-
-MakePlot <- function( n, m ) {
-  # N <- seq(10, 50, 10) # sample size
-  # D <- 3:10            # Data sets to correlate
-  Palette <- brewer.pal(n = length(D)+1, name = "PuRd")[(length(D)+1):2]
-  RangeY <- c(-0.005, 0.005)
-  for(d in D) {
-    nChr <- as.character(n)
-    dChr <- as.character(d)
-    Color <- Palette[which(d==D)]
-    Means <- subset(Descr, group2==nChr & group3==dChr & group4==m, select = mean)
-    if(d == D[1]) {
-      plot(R, unlist(Means), ylim = RangeY, col = Color, type="l", lty=1,
-           sub = n, xlab = "r", ylab = "rho - r", oma = c(1, 2, 2, 2))
-      grid(nx = NA, ny = NULL, col = "lightgray")      
-    }
-    else
-      lines(R, unlist(Means), col = Color, type="l", lty=1)
-  }
-  abline(h = 0, col = "gray60")
-  text(0, y = min(RangeY), m)
-}
-
-old.par <- par(mfrow = c(2, 2), mar = c(4, 3, 0.5, 1)+0.1)
-load("./data/CoreyDunlapBurke_None_Avg.Rda")
-MakePlot(50, "None")
+#old.par <- par(mfrow = c(2, 2), mar = c(4, 3, 0.5, 1)+0.1)
+load("./data/CoreyDunlapBurke_Matrix_None_Avg.Rda")
+LinePlot("None", Lines = "Sample Size", Selected = 10)
 load("./data/CoreyDunlapBurke_Fisher_Avg.Rda")
 MakePlot(50, "Fisher")
 load("./data/CoreyDunlapBurke_MinVar_Avg.Rda")
 MakePlot(50, "MinVar")
 load("./data/CoreyDunlapBurke_Truek_Avg.Rda")
 MakePlot(50, "TrueK")
-par(old.par)
-rm(old.par)
-#rep(Palette, each=length(D), length.out=length(N))
+#par(old.par)
+#rm(old.par)
