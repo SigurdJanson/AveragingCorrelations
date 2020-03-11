@@ -212,7 +212,6 @@ MeanR_Hotelling <- function( R, N ) {
   df <- N-2
   Z <- HotellingZ(R, df) # df missing
   Mean <- MeanR_None(Z, N)
-  #return(HotellingZInv(Mean, R, df)) #causes trouble by going back to a vector!
   return(Mean)
 }
 
@@ -224,7 +223,6 @@ MeanR_Hotelling2 <- function( R, N ) {
   df <- N-2
   Z <- HotellingZ2(R, df) # df missing
   Mean <- MeanR_None(Z, N)
-  #return(HotellingZInv(Mean, R, df)) #causes trouble by going back to a vector!
   return(Mean)
 }
 
