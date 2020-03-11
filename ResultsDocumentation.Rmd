@@ -11,7 +11,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-__It is not possible to average correlation coefficients__. In my studies in the social sciences I found that in every textbook. Do not average correlation coefficients! I needed that for a project and I remembered the Fisher Z transformation [@Fisher1921] that is supposed to alleviate the bias.
+__It is not possible to average correlation coefficients__. In my studies in the social sciences I found that in every textbook. Do not average correlations! I needed that for a project, anyway, and I remembered the Fisher Z transformation [@Fisher1921] that is supposed to alleviate the bias.
 
 First of all, mathematically it is true: the mere average of several correlation coefficients makes no sense. Correlations are not additive is the "simple" way to say it. That means something like this.
 
@@ -303,10 +303,13 @@ LinePlot("None", "Squared", Lines = "Data Sets", Selected = 30)
 ```
 
 
-## Fisher again - Moving to Independent Correlations
+# Moving to Independent Correlations
+
+## Fisher again - 
 
 ```{r Fisher Lines Indie, echo=FALSE}
 LinePlot("None", "Fisher", Lines = "Sample Size", Selected = 10, DataStruc = "Indie")
+LinePlot("None", "Fisher", Lines = "Data Sets", Selected = 10, DataStruc = "Indie")
 ```
 
 
@@ -324,9 +327,101 @@ load("./data/CoreyDunlapBurke_Indie_None_Avg.Rda")
 d1 <- Descr
 load("./data/CoreyDunlapBurke_Indie_Fisher_Avg.Rda")
 d2 <- Descr
-CompareByHeat(d1, d2)
 PlayViolin("None", "Fisher", DataStruc = "Indie")
 ```
+
+
+## Hotelling
+
+```{r Hotelling Lines Indie, echo=FALSE}
+LinePlot("Fisher", "Hotelling", Lines = "Sample Size", Selected = 10, DataStruc = "Indie")
+LinePlot("Fisher", "Hotelling", Lines = "Data Sets", Selected = 10, DataStruc = "Indie")
+PlayViolin("Fisher", "Hotelling", DataStruc = "Indie")
+
+```
+
+
+```{r Hotelling Indie Stats, echo=FALSE}
+load("./data/CoreyDunlapBurke_Indie_Fisher_Avg.Rda")
+d1 <- Descr
+load("./data/CoreyDunlapBurke_Indie_Hotelling_Avg.Rda")
+d2 <- Descr
+CompareByHeat(d1, d2)
+CompareMethodsTable(d1, d2)
+```
+
+
+## Minimum Variance Estimators
+
+### Standard Approximation
+```{r MinVar Lines Indie, echo=FALSE}
+LinePlot("Fisher", "MinVar", Lines = "Sample Size", Selected = 10, DataStruc = "Indie")
+LinePlot("Fisher", "MinVar", Lines = "Data Sets", Selected = 10, DataStruc = "Indie")
+PlayViolin("Fisher", "MinVar", DataStruc = "Indie")
+
+```
+
+```{r MinVar Indie Stats, echo=FALSE}
+load("./data/CoreyDunlapBurke_Indie_Fisher_Avg.Rda")
+d1 <- Descr
+load("./data/CoreyDunlapBurke_Indie_MinVar_Avg.Rda")
+d2 <- Descr
+CompareMethodsTable(d1, d2)
+```
+
+
+### True K
+```{r TrueK Lines Indie, echo=FALSE}
+LinePlot("MinVar", "TrueK", Lines = "Sample Size", Selected = 10, DataStruc = "Indie")
+LinePlot("MinVar", "TrueK", Lines = "Data Sets", Selected = 10, DataStruc = "Indie")
+PlayViolin("MinVar", "TrueK", DataStruc = "Indie")
+
+```
+
+```{r TrueK Indie Stats, echo=FALSE}
+load("./data/CoreyDunlapBurke_Indie_MinVar_Avg.Rda")
+d1 <- Descr
+load("./data/CoreyDunlapBurke_Indie_TrueK_Avg.Rda")
+d2 <- Descr
+CompareMethodsTable(d1, d2)
+```
+
+
+### Precise
+
+```{r Indie G Precise Vergleich, echo=FALSE}
+LinePlot("TrueK", "Precise", Lines = "Data Sets", Selected = 10, DataStruc = "Indie")
+```
+
+The numbers favour the precise algorithm, too. The total range of the bias is considerably smaller (by 40%) and for over 60% of the simulated scenarios it shows better results.
+
+```{r Indie Precise Stats, echo=FALSE}
+load("./data/CoreyDunlapBurke_Indie_TrueK_Avg.Rda")
+d1 <- Descr
+load("./data/CoreyDunlapBurke_Indie_Precise_Avg.Rda")
+d2 <- Descr
+CompareMethodsTable(d1, d2)
+```
+
+
+## Squared
+```{r Squared Lines Indie, echo=FALSE}
+LinePlot("MinVar", "Squared", Lines = "Sample Size", Selected = 10, DataStruc = "Indie")
+LinePlot("MinVar", "Squared", Lines = "Data Sets", Selected = 10, DataStruc = "Indie")
+PlayViolin("MinVar", "Squared", DataStruc = "Indie")
+
+```
+
+```{r Squared Indie Stats, echo=FALSE}
+load("./data/CoreyDunlapBurke_Indie_MinVar_Avg.Rda")
+d1 <- Descr
+load("./data/CoreyDunlapBurke_Indie_Squared_Avg.Rda")
+d2 <- Descr
+CompareMethodsTable(d1, d2)
+```
+
+
+
 
 ## References
 

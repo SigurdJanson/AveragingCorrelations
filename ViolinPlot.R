@@ -25,6 +25,7 @@ PlayViolin <- function(m1, m2, DataStruc = "Matrix") {
       draw_quantiles = c(0.05, 0.5, 0.95),
     ) + 
     geom_boxplot( width=0.05, aes(color = group4) ) + 
+    geom_jitter(shape=20, position=position_jitter(0.2)) + 
     theme(legend.position="none")+
     labs(title="Distribution of Bias", x="Correction Method", y = "Rho")
 }
