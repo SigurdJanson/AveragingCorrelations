@@ -1,0 +1,27 @@
+---
+title: "Bias Reduction when Averaging Correlations"
+subtitle: "Summary"
+output: html_notebook
+---
+
+Mathematically, it does not make sense to average correlation coefficients. However, we practitioner sometimes have little choice. Several correction methods allow us but they are still biased. This dashboard compares different methods and investgates strength and pattern of the bias.
+
+The correction methods being compared are:
+
+* **None** - no correction applied (as reference)
+* **Fisher z** - the well-known [Fisher z correction](https://en.wikipedia.org/w/index.php?title=Fisher_transformation&oldid=905355965).
+- **Hotelling z** - [Hotelling](https://www.jstor.org/stable/pdf/2983768.pdf) proposed a further correction of Fisher z.
+- Three variations of [Olkin & Pratts (1958) minimum variance estimator](https://www.researchgate.net/publication/38366915_Unbiased_Estimation_of_Certain_Correlation_Coefficients).
+    - **MinVar** - The most popular formula
+    - **True k** - A more accurate version using a value of 2.86 instead of the approximate 3
+    - **Precise ** - The accurate but slow formula
+
+The values represent the bias as the difference between the theoretical value Rho and the observed result of the simulation. To further identify patterns the simulation varied two parameters:
+
+- The theoretical correlation Rho between data sets.
+- The number of data sets that provided the correlations to be averaged: 3 - 10 data sets.
+- The numer of samples in each data set: 10 - 50 in steps of 10.
+
+
+Find more [details and code on GitHub](https://github.com/SigurdJanson/AveragingCorrelations).
+
