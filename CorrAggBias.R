@@ -68,16 +68,20 @@ HotellingZ <- function( r, df ) {
 #' @describeIn FisherZ Inverse for \code{HotellingZ}
 HotellingZInv <- function( z, df, tol = .Machine$double.eps ) {
   #Fisher <- Find((4*df * z + r) / (4*df - 3) == 0)
-  finv <- function(zf, zh, df) {
+  .f <- function(zf, zh, df) {
     -4*df*zh + (4*df-3)*zf - tanh(zf)
   }
+  finv <- function(zh, df) {
+    uniroot(.f, interval = limits, zh = zh, df = df, tol = tol)[[1]]
+  }
+  transform <- Vectorize(finv, c("zh"))#, USE.NAMES = FALSE) #, "df"
   
   if(missing(df)) stop("Degrees of freedom 'df' are missing")
   if(any(df <= 1)) dfleq1 <- which(df <= 1)
-  
   # Outer limit is defined by atanh(1-.Machine$double.eps)
   limits <- c(-18.36840028483855, 18.36840028483855)
-  Fisher <- uniroot(f, interval = limits, zh = z, df = df, tol = tol)[[1]]
+
+  Fisher <- transform(z, df) #finv(z, df)#
 
   if(any(df <= 1)) Fisher[dfleq1] <- NaN
   return(FisherZInv(Fisher))
