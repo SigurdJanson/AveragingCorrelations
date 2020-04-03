@@ -23,8 +23,9 @@ AggregateAvgCorSim <- function(M, DataStruc) {
       save(Descr, file = paste("./data/CoreyDunlapBurke", DataStruc, m, "Avg.Rda", sep = "_"))
     }
   }
+  invisible(Result)
 }
-AggregateAvgCorSim("TrueK", "Indie")
+AggregateAvgCorSim("Hotelling2", "Matrix")
 rm(AggregateAvgCorSim)
 
 

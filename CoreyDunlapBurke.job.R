@@ -1,22 +1,26 @@
 # Code that replicates the study by Corey, Dunlap & Burke
 #
-#
-
 library(simstudy)
+library(RGenData)
 source("./CorrAggBias.R")
 
 
 # Variables ----
-N <- seq(10, 50, 10)   # sample size
+MAvailable <- c("None", "Fisher", "Hotelling", "Hotelling2", 
+                "MinVar", "TrueK", "Precise", "Squared")
+PDAvailable <- c("Normal", "")
+# Specify what to simulate
+N <- seq(10, 50, 10)        # sample size
 R <- seq(0.00, 0.95, 0.05)  # Rho
-D <- 3:10              # Data sets to correlate
-#M <- c("None", "Fisher", "Hotelling", "Hotelling2", "MinVar", "TrueK", "Precise", "Squared")
-M <- c("Fisher") # Correction method
-DataStruc <- "Indie" # structure of the data, one of c("Matrix", "Indie", )
+D <- 3:10                   # Data sets to correlate
+M <- c("Hotelling2")           # Correction method
+PD <- PDAvailable[1]        # Probability Distribution
+DataStruc <- "Indie"        # structure of the data, one of c("Matrix", "Indie")
+# 
 NConditions <- length(D) * length(N) * length(R) * length(M)
 NIterations <- 50000
 
-# Create an empty data frame to allocate the memory (saves time (a lot))
+# Create an empty data frame to allocate the memory (saves time (a lot)) ----
 Names <- c("Rho", "SampleSize", "Samples", "Method", "Iteration",
            "RObs", "RDelta")
 Result <- vector(mode = "list", length = length(Names))
@@ -31,6 +35,15 @@ for(Column in 1:length(Result)) {
       Result[[Column]] <- integer(NConditions*NIterations)
 }
 rm(Column)
+
+
+# Create Population Data ----
+# While the simulation functions for normal distributed data is generated
+# on the fly, non normal data creates a large population of values, first.
+if(PD != "" && PD != "Normal" && !is.null(PD)) {
+  # Create a list of population data sets, one set for each Rho
+  PopulationData <- NA
+}
 
 
 # SIMULATION ----
@@ -99,7 +112,6 @@ RandomSample_Indie <- function(Iteration, SampleSize, Rho) {
     X <- split(X, rep(1:k, each = n))
     Y <- split(Y, rep(1:k, each = n))
     R <- mapply(cor, X, Y)
-    
   }
   # Data
   MaxD <- max(D) # global variable D
@@ -128,6 +140,37 @@ RandomSample_Indie <- function(Iteration, SampleSize, Rho) {
   }#for
 }
 
+
+RandomSample_Indie_NonNorm <- function(Iteration, SampleSize, Rho) {
+  # 
+  MaxD <- max(D) # global variable D
+
+  # Get correlated data - one sample for all sample sizes
+  SimDat <- sample(PopulationData, SampleSize) #TODO: pick the data with a correlation Rho
+  # Estimate correlation matrix
+  CorMat <- cor( SimDat[, 2:(MaxD+1)] ) # 2:(MaxD+1)??????
+  
+  for(Samples in D) {
+    # Choose subset of the random sample
+    SubSample <- sample(1:MaxD, Samples)
+    
+    # Use only lower triangle of corr. matrix
+    PartialCorMat <- CorMat[SubSample, SubSample]
+    Correls <- PartialCorMat[lower.tri(PartialCorMat)]
+
+    m <- M
+    Result$Rho[Index]        <<- Rho #
+    Result$SampleSize[Index] <<- SampleSize #
+    Result$Samples[Index]    <<- Samples  #
+    Result$Iteration[Index]  <<- Iteration #
+    
+    RObs <- MeanR(Correls, SampleSize, Method = m)
+    Result$Method[Index]  <<- m
+    Result$RObs[Index]    <<- RObs
+    Result$RDelta[Index]  <<- Rho - RObs
+    Index <<- Index +1
+  }#for
+}
 
 
 # Computations ----

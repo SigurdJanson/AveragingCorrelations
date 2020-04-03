@@ -4,7 +4,12 @@ author: "Jan Seifert"
 date: "16 02 2020"
 bibliography: ./pub/AveragingCorrelations.bib
 csl: ./pub/apa-6th-edition.csl
-output: html_document
+output: 
+  html_document:
+    toc: true # table of content true
+    toc_depth: 3  # upto three depths of headings (specified by #, ## and ###)
+    number_sections: true  # if you want number sections at each table header
+    theme: united  # 
 ---
 
 ```{r setup, include=FALSE}
@@ -52,7 +57,7 @@ What measures and visualisations will I use to answer these questions when compa
 
 
 
-## Averaging correlation coefficients from a matrix
+# Averaging correlation coefficients from a matrix
 
 This paper will simulate averaged correlations with the following variations according to @Corey1998:
 
@@ -104,7 +109,7 @@ PlayViolin("None", "Fisher")
 ```
 
 
-## Hotelling
+## Hotelling ($z^*$)
 
 Hotellings correction does not get much attention in the literature. @Alexander1990 [citing @Alexander1985] claimed that Hotelling is not superior to Fisher's z. Let us compare Hotelling and Fisher z. At a first glance, it looks like Hotelling only changes the bias without doing much to alleviate it.It is extremely difficult to come to a conclusion visually.
 
@@ -148,8 +153,29 @@ PlayViolin("Fisher", "Hotelling")
 <!-- ``` -->
 
 
+## Hotelling ($z^{**}$)
+
+Hotellings correction does not get much attention in the literature. @Alexander1990 [citing @Alexander1985] claimed that Hotelling is not superior to Fisher's z.
+
+What is mostly neglected is the fact that Hotelling gave us two equations. A simpler one $z^*$ that he suggested is appropriate for larger samples and $z^{**}$ that should be used for small ones.
+
+```{r Hotelling2, echo=FALSE}
+LinePlot("Fisher", "Hotelling2", Lines = "Data Sets", Selected = 50)
+```
 
 
+```{r Hotelling2 Stats, echo=FALSE}
+load("./data/CoreyDunlapBurke_Matrix_Fisher_Avg.Rda")
+d1 <- Descr
+load("./data/CoreyDunlapBurke_Matrix_Hotelling2_Avg.Rda")
+d2 <- Descr
+CompareMethodsTable(d1, d2)
+```
+
+
+```{r Violin: Hotelling2, echo=FALSE}
+PlayViolin("Fisher", "Hotelling2")
+```
 
 ## Variations of Olkin & Pratt
 
@@ -303,9 +329,9 @@ LinePlot("None", "Squared", Lines = "Data Sets", Selected = 30)
 ```
 
 
-# Moving to Independent Correlations
+# Independent Correlations
 
-## Fisher again - 
+## Fisher z
 
 ```{r Fisher Lines Indie, echo=FALSE}
 LinePlot("None", "Fisher", Lines = "Sample Size", Selected = 10, DataStruc = "Indie")
@@ -331,7 +357,7 @@ PlayViolin("None", "Fisher", DataStruc = "Indie")
 ```
 
 
-## Hotelling
+## Hotelling ($z^*$)
 
 ```{r Hotelling Lines Indie, echo=FALSE}
 LinePlot("Fisher", "Hotelling", Lines = "Sample Size", Selected = 10, DataStruc = "Indie")
@@ -349,6 +375,28 @@ d2 <- Descr
 CompareByHeat(d1, d2)
 CompareMethodsTable(d1, d2)
 ```
+
+
+## Hotelling ($z^**$)
+
+```{r Hotelling2 Lines Indie, echo=FALSE}
+LinePlot("Fisher", "Hotelling2", Lines = "Sample Size", Selected = 10, DataStruc = "Indie")
+LinePlot("Fisher", "Hotelling2", Lines = "Data Sets", Selected = 10, DataStruc = "Indie")
+PlayViolin("Fisher", "Hotelling2", DataStruc = "Indie")
+
+```
+
+
+
+```{r Hotelling2 Stats Indie, echo=FALSE}
+load("./data/CoreyDunlapBurke_Indie_Fisher_Avg.Rda")
+d1 <- Descr
+load("./data/CoreyDunlapBurke_Indie_Hotelling2_Avg.Rda")
+d2 <- Descr
+CompareMethodsTable(d1, d2)
+```
+
+
 
 
 ## Minimum Variance Estimators
