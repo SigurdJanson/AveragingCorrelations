@@ -141,15 +141,19 @@ test_that("Hotelling2", {
   inp <- seq(-0.99, 0.99, 0.01)
   df <- 2
   expect_equal(inp, HotellingZ2Inv(HotellingZ2(inp, df), df))
-
-  inp <- seq(-0.99, 0.99, 0.01)
   df <- 10
   expect_equal(inp, HotellingZ2Inv(HotellingZ2(inp, df), df))
-
-  inp <- seq(-0.99, 0.99, 0.01)
-  df <- 20
+  df <- 50
   expect_equal(inp, HotellingZ2Inv(HotellingZ2(inp, df), df))
   
+  # Edge cases
+  inp <- c(-1+.Machine$double.eps, 1-.Machine$double.eps)
+  df <- 2
+  expect_equal(inp, HotellingZ2Inv(HotellingZ2(inp, df), df))
+  df <- 10
+  expect_equal(inp, HotellingZ2Inv(HotellingZ2(inp, df), df))
+  df <- 50
+  expect_equal(inp, HotellingZ2Inv(HotellingZ2(inp, df), df))
 })
 
 
@@ -280,18 +284,18 @@ test_that("MinVar G Precise", {
 test_that("MeanR", {
   # Default averaging
   inp <- seq(-0.5, 0.5, 0.5)
-  expect_equal(0, MeanR(inp, 2, "None"))
-  expect_equal(0, MeanR(inp, 10, "None"))
-  expect_equal(0, MeanR(inp, c(2, 5, 2), "None"))
+  expect_equal(MeanR(inp, 2, "None"), 0)
+  expect_equal(MeanR(inp, 10, "None"), 0)
+  expect_equal(MeanR(inp, c(2, 5, 2), "None"), 0)
   #TODO: MORE TESTS NEEDED FOR 'NONE'
   
   
   # Fisher averaging
   inp <- seq(-0.5, 0.5, 0.5)
-  expect_equal(0, MeanR(inp, 2, "Fish"))
-  expect_equal(0, MeanR(inp, 10, "Fisher"))
-  expect_equal(0, MeanR(inp, c(2, 5, 2), "Fisher"))
-  
+  expect_equal(MeanR(inp, 2, "Fish"), 0)
+  expect_equal(MeanR(inp, 10, "Fisher"), 0)
+  expect_equal(MeanR(inp, c(2, 5, 2), "Fisher"), 0)
+
   # Unequal n
   inp.r <- c(0.2900, 0.4500, 0.3600)
   inp.n <- c(45, 28, 32)
@@ -305,8 +309,19 @@ test_that("MeanR", {
   inp <- seq(-0.5, 0.5, 0.5)
   expect_equal(MeanR(inp, 4, "Hotelling"), 0)
   expect_equal(MeanR(inp, 10, "Hotelling"), 0)
-  expect_equal(MeanR(inp, c(4, 10, 4), "Hotelling"), 0)
+  inp <- seq(-0.5, 0.5, 0.1)
+  expect_equal(MeanR(inp, 25, "Hotelling"), 0)
+  expect_equal(MeanR(inp, 250, "Hotelling"), 0)
   
+  # Hotelling2 averaging
+  inp <- seq(-0.5, 0.5, 0.5)
+  expect_equal(MeanR(inp, 4, "Hotelling2"), 0)
+  expect_equal(MeanR(inp, 10, "Hotelling2"), 0)
+  inp <- seq(-0.5, 0.5, 0.1)
+  expect_equal(MeanR(inp, 25, "Hotelling2"), 0)
+  expect_equal(MeanR(inp, 250, "Hotelling2"), 0)
+  
+
   
   # averaging sgn(r)*r²
   inp <- seq(-0.5, 0.5, 0.1)

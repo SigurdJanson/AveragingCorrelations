@@ -1,12 +1,12 @@
 #' FisherZ
 #' Fisher z transformation or it's inverse on a vector 
 #' of correlation coefficients.
-#' @param r A vectors of correlation coefficients
-#' @param z A vectors of fisher/hotelling z transformed correlation 
+#' @param r A vector of correlation coefficients
+#' @param z A vector of fisher/hotelling z transformed correlation 
 #' coefficients
 #' @param df degrees of freedom of the distribution of the 
-#' correlation coefficient
-#' @param n Sample size
+#' correlation coefficient. One value for all r/z.
+#' @param n Sample size. One value for all r/z.
 #' @description 
 #' Hotelling (1953) described two formulas to correct Fisher z.
 #' Olkin & Pratts (1958) formula is always quoted with k=3 when in fact they
@@ -72,9 +72,12 @@ HotellingZInv <- function( z, df, tol = .Machine$double.eps ) {
     -4*df*zh + (4*df-3)*zf - tanh(zf)
   }
   finv <- function(zh, df) {
-    uniroot(.f, interval = limits, zh = zh, df = df, tol = tol)[[1]]
+    if(zh == 0)
+      return(0) #avoid laborious 
+    else
+      return(uniroot(.f, interval = limits, zh = zh, df = df, tol = tol)[[1]])
   }
-  transform <- Vectorize(finv, c("zh"))#, USE.NAMES = FALSE) #, "df"
+  transform <- Vectorize(finv, c("zh")) 
   
   if(missing(df)) stop("Degrees of freedom 'df' are missing")
   if(any(df <= 1)) dfleq1 <- which(df <= 1)
@@ -103,7 +106,7 @@ HotellingZ2 <- function( r, df ) {
 #' HotellingZ2Inv
 #' @describeIn FisherZ Inverse for \code{HotellingZ}
 HotellingZ2Inv <- function( z, df, tol = .Machine$double.eps  ) {
-  #Fisher <- Find((4*df * z + r) / (4*df - 3) == 0)
+  #Fisher <- Find(... == 0)
   .f <- function(z, zh, df) {
     #zh2 <- 5*tanh(z)^3 - (24*df+33)*tanh(z) + (96*df^2-72*df-23)*z / 96 / df^2
     tanhz <- tanh(z)
@@ -114,16 +117,24 @@ HotellingZ2Inv <- function( z, df, tol = .Machine$double.eps  ) {
     return(zh2 - zh)
   }
   finv <- function(zh, df) {
-    uniroot(.f, interval = limits, zh = zh, df = df, tol = tol)[[1]]
+    if(zh == 0)
+      return(0) #avoid laborious 
+    else
+      return(uniroot(.f, interval = limits, zh = zh, df = df, tol = tol)[[1]])
   }
-  transform <- Vectorize(finv, c("zh"))#, USE.NAMES = FALSE) #, "df"
+  transform <- Vectorize(finv, c("zh"))
   
   if(missing(df)) stop("Degrees of freedom 'df' are missing")
   if(any(df <= 1)) dfleq1 <- which(df <= 1)
-  # Outer limit is defined by atanh(1-.Machine$double.eps)
-  limits <- c(-18.36840028483855, 18.36840028483855)
-  
-  Fisher <- transform(z, df) 
+
+  if(length(z) == 1)
+    # choose value a little closer to 0 than z
+    limits <- sort(c(z - .Machine$double.eps^0.25*sign(z), z*2.83))
+  else
+    # Outer limit is defined by atanh(1-.Machine$double.eps)
+    limits <- c(-18.36840028483855, 18.36840028483855)
+
+  Fisher <- transform(z, df)
   
   if(any(df <= 1)) Fisher[dfleq1] <- NaN
   return(FisherZInv(Fisher))
@@ -233,10 +244,10 @@ MeanR_Fisher <- function( R, N ) {
 #' @references Hotelling H (1953) New light on the correlation 
 #' coefficient and its transforms. J R Stat Soc B 15:193–232.
 MeanR_Hotelling <- function( R, N ) {
-  df <- N-2
+  df <- N-1
   Z <- HotellingZ(R, df) # df missing
   Mean <- MeanR_None(Z, N)
-  return(Mean)
+  return(HotellingZInv(Mean, df))
 }
 
 #' MeanR_Hotelling2
@@ -244,10 +255,10 @@ MeanR_Hotelling <- function( R, N ) {
 #' @references Hotelling H (1953) New light on the correlation 
 #' coefficient and its transforms. J R Stat Soc B 15:193–232.
 MeanR_Hotelling2 <- function( R, N ) {
-  df <- N-2
+  df <- N-1
   Z <- HotellingZ2(R, df) # df missing
   Mean <- MeanR_None(Z, N)
-  return(Mean)
+  return(HotellingZ2Inv(Mean, df))
 }
 
 
