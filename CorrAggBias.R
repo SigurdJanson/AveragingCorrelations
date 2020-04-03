@@ -81,7 +81,7 @@ HotellingZInv <- function( z, df, tol = .Machine$double.eps ) {
   # Outer limit is defined by atanh(1-.Machine$double.eps)
   limits <- c(-18.36840028483855, 18.36840028483855)
 
-  Fisher <- transform(z, df) #finv(z, df)#
+  Fisher <- transform(z, df) 
 
   if(any(df <= 1)) Fisher[dfleq1] <- NaN
   return(FisherZInv(Fisher))
@@ -102,15 +102,28 @@ HotellingZ2 <- function( r, df ) {
 
 #' HotellingZ2Inv
 #' @describeIn FisherZ Inverse for \code{HotellingZ}
-HotellingZ2Inv <- function( z, r, df ) {
-  if(missing(r)) stop("Untransformed correlations 'r' are missing")
+HotellingZ2Inv <- function( z, df, tol = .Machine$double.eps  ) {
+  #Fisher <- Find((4*df * z + r) / (4*df - 3) == 0)
+  .f <- function(z, zh, df) {
+    #zh2 <- 5*tanh(z)^3 - (24*df+33)*tanh(z) + (96*df^2-72*df-23)*z / 96 / df^2
+    tanhz <- tanh(z)
+    s1 <- z
+    s2 <- (3*z + tanhz) / 4 / df
+    s3 <- (23*z + 33 * tanhz - 5*tanhz^3) / 96 / df^2
+    zh2 <- (s1 - s2 - s3)
+    return(zh2 - zh)
+  }
+  finv <- function(zh, df) {
+    uniroot(.f, interval = limits, zh = zh, df = df, tol = tol)[[1]]
+  }
+  transform <- Vectorize(finv, c("zh"))#, USE.NAMES = FALSE) #, "df"
+  
   if(missing(df)) stop("Degrees of freedom 'df' are missing")
   if(any(df <= 1)) dfleq1 <- which(df <= 1)
+  # Outer limit is defined by atanh(1-.Machine$double.eps)
+  limits <- c(-18.36840028483855, 18.36840028483855)
   
-  #Fisher <- z*96*df^2 - 5*r^3 - 33*r - 24*df*r
-  #Fisher <- Fisher / (96*df^2 + 72*df - 23)
-  #Fisher <- -(24*df*r + 96*df^2*z - 5*r^3 + 33*r)
-  #Fisher <- Fisher / ( - 72*df^3 + 96*df^2 - 23 )
+  Fisher <- transform(z, df) 
   
   if(any(df <= 1)) Fisher[dfleq1] <- NaN
   return(FisherZInv(Fisher))

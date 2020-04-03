@@ -117,7 +117,7 @@ test_that("Hotelling2", {
   z.ori <- seq(-0.9, 0.9, 0.1)
   z <- z.ori
   df <- 5
-  zh <- z - (3*z+r)/(4*df) - ((23*z + 33*r - 5*r^3) / (96 * df^2))
+  #zh <- z - (3*z+r)/(4*df) - ((23*z + 33*r - 5*r^3) / (96 * df^2))
   
   #z <- ( 5*df^2*r^3 - 33*df^2*r - 24*df*r ) / ( 23*df^2 + 72*df - 96 )
   #z = (df*r* (df*(5*r^2 - 33) - 24) - 96*zh) / (23*df^2 + 72*df - 96) #and n*(23*n + 72)!=96
@@ -137,18 +137,18 @@ test_that("Hotelling2", {
          -0.03266875, -0.05158328, 0.01143920, -0.38875232, -0.22382820)
   expect_equal(e, HotellingZ2(inp, df), tolerance = .006)
 
-  
+  # Reversion testing
   inp <- seq(-0.99, 0.99, 0.01)
   df <- 2
-  #expect_equal(inp, HotellingZ2Inv(HotellingZ2(inp, df), inp, df))
+  expect_equal(inp, HotellingZ2Inv(HotellingZ2(inp, df), df))
 
   inp <- seq(-0.99, 0.99, 0.01)
   df <- 10
-  #expect_equal(inp, HotellingZ2Inv(HotellingZ2(inp, df), inp, df))
+  expect_equal(inp, HotellingZ2Inv(HotellingZ2(inp, df), df))
 
   inp <- seq(-0.99, 0.99, 0.01)
   df <- 20
-  #expect_equal(inp, HotellingZ2Inv(HotellingZ2(inp, df), inp, df))
+  expect_equal(inp, HotellingZ2Inv(HotellingZ2(inp, df), df))
   
 })
 
