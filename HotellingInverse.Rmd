@@ -1,0 +1,55 @@
+---
+title: "How to Invert the Hotelling z Transformation?"
+output: html_notebook
+---
+
+When we want to average correlations using the Hotelling transformation, we face one problem. The Hotelling transformation requires not only the Fisher $z$ as input but also the observed $r$. Going the 'inverse route' after averaging we need the Hotelling $\bar z_H$ as input but also the $\bar r$ which we do not have. Of course, we don't. Getting the $\bar r$ is why we started doing this in the first place.
+
+But we can get around this:
+
+$$
+\bar z = H'(\bar z_H, \bar r, df) = H'(\bar z_H, F'(\bar z, df), df)
+$$
+with $H'()$ being the inverse Hotelling transformation from $z_H$ to $z$ and $F'()$ the inverse Fisher z transformation. That leads to:
+
+$$
+\bar z = {{4df \cdot \bar z_H + \bar r} \over 4df - 3} =
+{{4df \cdot \bar z_H + {e^{2\bar z}-1 \over{e^{2\bar z}+1}}}  \over {4df - 3} }
+$$
+To make it a bit easier:
+
+$$
+(4df-3)\bar z = {4df \cdot \bar z_H + {e^{2\bar z}-1 \over{e^{2\bar z}+1}}}
+\\
+(4df-3)\bar z - {2 \over {e^{2\bar z}+1}} = 4df\bar z_H
+\\
+(4df-3)\bar z - 4df\bar z_H - tanh(z) = 0
+$$
+
+Now we have a somewhat readable equation with a single unknown $z$ that we can feed into search algorithm like `uniroot`.
+
+
+
+```{r eval=FALSE, include=TRUE}
+f <- function(z, zh, df) {
+  -4*df*zh + (4*df-3)*z - tanh(z)
+}
+
+z <- uniroot(f, interval = limits, zh = zh, df = df,tol = .Machine$double.eps^0.5)[1]
+```
+
+Using that ina forward-reverse test we can analyse the precision:
+
+```{r echo=TRUE}
+limits <- c(0, 18.36840028483855)
+for(r in c(0.01, 0.1, 0.2, 0.25, 0.5, 0.75, 0.8, 0.9, 0.99, 0.999999)) {
+  df <- 20
+  z = FisherZ( r )
+  zh <- HotellingZ(r, df)
+  zinv <- uniroot(f, interval = limits, zh = zh, df = df,tol = .Machine$double.eps)[[1]]
+  
+  print(paste(z, "-", zinv, "=", z-zinv), quote = FALSE)
+}
+```
+
+
