@@ -78,11 +78,15 @@ source("CompareMethodsTables.R")
 ```
 
 
-## Replication
+## Replication: Fisher z
 
-This study replicates @Corey1998, first. We will investigate the averaged correlations $\bar r$ and the corrected correlations using Fisher z: $\bar r_z$. It enhances the precision a little. Here we computed 50.000 calculations instead of 10.000. We also provide not only the values 0.1,0.2, etc. but add the steps in between, too.
+This study replicates @Corey1998, first. We will investigate the averaged correlations $\bar r$ and the corrected correlations using Fisher z: $\bar r_z$. 
 
-The first plot shows the observed bias for uncorrected correlations.
+$$
+z_F = { {1 \over 2} \cdot ln \left( 1+r \over 1-r \right) }
+$$
+
+It enhances the accuracy of the mean of correlations. I increased the trials to  50.000 calculations (instead of 10.000). I also provide not only the values 0.1, 0.2, etc. but add the steps in between, too. The first plot shows the observed bias for uncorrected correlations.
 
 ```{r Replication Plot 1, echo=FALSE}
 LinePlot("None", "Fisher", Lines = "Data Sets", Selected = 50)
@@ -111,7 +115,14 @@ PlayViolin("None", "Fisher")
 
 ## Hotelling ($z^*$)
 
-Hotellings correction does not get much attention in the literature. @Alexander1990 [citing @Alexander1985] claimed that Hotelling is not superior to Fisher's z. Let us compare Hotelling and Fisher z. At a first glance, it looks like Hotelling only changes the bias without doing much to alleviate it.It is extremely difficult to come to a conclusion visually.
+Hotellings correction does not get much attention in the literature. That may have several reasons. @Alexander1985 finds that Hotelling is not superior to Fisher's z. This study focused on hypthesis testing, though. It also seems to have been Hotellings focus. It leads to the obstacle that Hotelling does not provide a method to go back to correlation $\bar r$ after averaging. It is not easy to get an inverse for Hotellings transformation. Here is the Hotelling z function to show you what the obstacle is.
+
+$$
+z_H^{*} = { 3z_F+r \over 4 (n-1) }
+$$
+Hotelling comes on top of the Fisher transformation $Z_F$ in the numerator. Also part of the numerator is te correlation $r$. Now, when we take our $s$ samples with sample size $n$ each and compute $s$ correlations (one for each sample), we get several $z_H$. These we will average to $\bar z_H^{*}$. To get $\bar r$ we have to reverse the transformation, but - as you can see in the formula - there are two unknowns now: $\bar z_F$ and $\bar r$. It took a little inspiration (at least for me, the social scientist) to program an inverse function for the Hotelling transform.
+
+Let us compare Hotelling and Fisher z. At a first glance, it looks like Hotelling only changes the bias without doing much to alleviate it.It is extremely difficult to come to a conclusion visually.
 
 ```{r Hotelling, echo=FALSE}
 LinePlot("Fisher", "Hotelling", Lines = "Data Sets", Selected = 50)
@@ -140,32 +151,23 @@ PlayViolin("Fisher", "Hotelling")
 
 
 
-<!-- What is mostly neglected is the fact that Hotelling gave us two equations. A simpler one $z^*$ that he suggested is appropriate for larger samples and $z^{**}$ that should be used for small ones. -->
-
-<!-- ```{r Hotelling2, echo=FALSE} -->
-<!-- old.par <- par(mfrow = c(1, 2), mar = c(4, 3, 0.5, 1)+0.1) -->
-<!-- load("./data/CoreyDunlapBurke_Fisher_Avg.Rda") -->
-<!-- MakePlot(50, "Fisher", Height = 0.01) -->
-<!-- load("./data/CoreyDunlapBurke_Hotelling2_Avg.Rda") -->
-<!-- MakePlot(50, "Hotelling2", Height = 0.01) -->
-<!-- par(old.par) -->
-<!-- rm(old.par) -->
-<!-- ``` -->
-
-
 ## Hotelling ($z^{**}$)
 
-Hotellings correction does not get much attention in the literature. @Alexander1990 [citing @Alexander1985] claimed that Hotelling is not superior to Fisher's z.
+What is mostly neglected is the fact that Hotelling gave us two equations. A simpler one $z^*$ that he suggested is appropriate for larger samples and $z^{**}$ that should be used for small ones. This is the extended equation that this section compares to the simpler one.
 
-What is mostly neglected is the fact that Hotelling gave us two equations. A simpler one $z^*$ that he suggested is appropriate for larger samples and $z^{**}$ that should be used for small ones.
+$$
+z_H^{**} = { 3z_F+r \over 4 (n-1) } - {23z_F - 33r - 5r^3 \over 96(n-1)^2}
+$$
+Of course, I simulated  data again and transformed it with the Hotelling** transformation to find out what it can do to an averaged correlation. In fact, both versions of Hotellings transformation seem to perform a tiny bit worse than the mere Fisher transformation. It was worth a try.
 
 ```{r Hotelling2, echo=FALSE}
-LinePlot("Fisher", "Hotelling2", Lines = "Data Sets", Selected = 50)
+LinePlot("Hotelling", "Hotelling2", Lines = "Data Sets", Selected = 50)
 ```
 
+It turns out, that the disregard of the Hotelling transformation has a basis. Both transformations add more complexity but add no accuracy.
 
 ```{r Hotelling2 Stats, echo=FALSE}
-load("./data/CoreyDunlapBurke_Matrix_Fisher_Avg.Rda")
+load("./data/CoreyDunlapBurke_Matrix_Hotelling_Avg.Rda")
 d1 <- Descr
 load("./data/CoreyDunlapBurke_Matrix_Hotelling2_Avg.Rda")
 d2 <- Descr
@@ -174,8 +176,10 @@ CompareMethodsTable(d1, d2)
 
 
 ```{r Violin: Hotelling2, echo=FALSE}
-PlayViolin("Fisher", "Hotelling2")
+PlayViolin("Hotelling", "Hotelling2")
 ```
+
+
 
 ## Variations of Olkin & Pratt
 
@@ -225,7 +229,7 @@ LinePlot("MinVar", "TrueK", Lines = "Data Sets", Selected = 10)
 ```
 
 
-The numbers show a slight advantage of k=2.86... over k=3. The total range, the deviation from zero, the standard deviation are all smaller. All in all, 7.5% more values are closer to zero. Based on these data my conclusion is, that we should prefer the more accurate k over k=3. The advantage may be subtle but, to a computer, it makes no difference. 
+The numbers show a slight advantage of k=2.86... over k=3. The total range, the deviation from zero, the standard deviation are all smaller. All in all, 7.5% more values are closer to zero. Based on these data my conclusion is, that we should prefer the more accurate k over k=3. The advantage may be small but there is an advantage and to a computer it makes no difference whether it uses 3 or 2.86. The recommendation is clear then.
 
 ```{r True k Stats, echo=FALSE}
 load("./data/CoreyDunlapBurke_Matrix_MinVar_Avg.Rda")
@@ -238,7 +242,6 @@ CompareMethodsTable(d1, d2)
 
 ```{r MinVar-TrueK Violin, echo=FALSE}
 PlayViolin("MinVar", "TrueK")
-
 ```
 
 
@@ -357,7 +360,7 @@ PlayViolin("None", "Fisher", DataStruc = "Indie")
 ```
 
 
-## Hotelling ($z^*$)
+## Hotelling ($z^{*}$)
 
 ```{r Hotelling Lines Indie, echo=FALSE}
 LinePlot("Fisher", "Hotelling", Lines = "Sample Size", Selected = 10, DataStruc = "Indie")
@@ -377,7 +380,7 @@ CompareMethodsTable(d1, d2)
 ```
 
 
-## Hotelling ($z^**$)
+## Hotelling ($z^{**}$)
 
 ```{r Hotelling2 Lines Indie, echo=FALSE}
 LinePlot("Fisher", "Hotelling2", Lines = "Sample Size", Selected = 10, DataStruc = "Indie")
@@ -453,6 +456,8 @@ CompareMethodsTable(d1, d2)
 
 
 ## Squared
+
+
 ```{r Squared Lines Indie, echo=FALSE}
 LinePlot("MinVar", "Squared", Lines = "Sample Size", Selected = 10, DataStruc = "Indie")
 LinePlot("MinVar", "Squared", Lines = "Data Sets", Selected = 10, DataStruc = "Indie")
